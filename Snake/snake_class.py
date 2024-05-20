@@ -120,7 +120,7 @@ class Snake:
         set_list = snke_list[1:]
         # 判断头和身体是否重叠或判断超出边界
         if snke_list[0] in set_list or x < 0 or x > self.Column - 1 or y < 0 or y > self.Row - 1 or self.Energy <= 0:
-            # self.pause_flag = 1
+            self.pause_flag = 1
             return 1
         else:
             return 0
@@ -143,6 +143,7 @@ class Snake:
         if self.game_over(self.snake_list):
             self.over_label = tk.Label(self.win, text='Game Over', font=('楷体', 25), width=15, height=1)
             self.over_label.place(x=(self.Width - 260) / 2, y=(self.Height - 40) / 2, bg=None)
+            self.win.update()
             return False
         else:
             return True
@@ -166,9 +167,10 @@ class Snake:
         canvas.bind("<KeyPress-Escape>", self.Exit_game)
         canvas.bind("<KeyPress-space>", self.Pause_game)
 
-    def Restart_game(self,event=None):
+    def Restart_game(self,event=None,):
         if not self.over_label is int:
             self.over_label.destroy()
+            self.win.update()
         self.pause_flag = -1
         self.Dirc = [0, 0]
         self.Score = 0
