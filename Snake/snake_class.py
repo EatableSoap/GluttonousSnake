@@ -167,7 +167,7 @@ class Snake:
         canvas.bind("<KeyPress-Escape>", self.Exit_game)
         canvas.bind("<KeyPress-space>", self.Pause_game)
 
-    def Restart_game(self,event=None,):
+    def Restart_game(self, event=None, ):
         if not self.over_label is int:
             self.over_label.destroy()
             self.win.update()
@@ -183,7 +183,6 @@ class Snake:
         self.draw_the_snake(self.canvas, self.snake_list)
         self.setlable()
         self.key_bind(self.canvas)
-
 
     def ramdom_snake(self):
         # 随机生成蛇的位置

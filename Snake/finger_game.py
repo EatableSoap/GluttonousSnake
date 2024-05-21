@@ -2,12 +2,12 @@ import cv2 as cv
 from pynput import keyboard
 from snake_class import Snake
 
-ip = "10.198.146.150"
+ip = "10.198.150.166"
 port = "4747"
 url = "http://" + ip + ":" + port + "/video"
 
 cap = cv.VideoCapture(url)
-game = Snake(Fps=100)
+game = Snake(Fps=100,row=40,column=40,Unit_size=10)
 control = keyboard.Controller()
 
 
@@ -17,8 +17,8 @@ def printpic(local_game):
     img = frame
     # cv.moveWindow("", int(pos[0]), int(pos[1]))
     if ret:
-        img = cv.resize(img, (local_game.Width, local_game.Height), interpolation=cv.INTER_NEAREST)
         # img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+        cv.rectangle(img,(0,0),(500,500),color=(0,255,0))
         cv.imshow("Phone Camera", img)
         if local_game.game_loop():
             local_game.win.after(0, lambda: printpic(local_game))
