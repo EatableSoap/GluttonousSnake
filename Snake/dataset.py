@@ -3,8 +3,10 @@ import pickle
 
 import cv2 as cv
 import numpy as np
+from skimage import feature as ft
+from skimage.feature import local_binary_pattern
 
-path = r'D:/AI_project/dataset/'
+path = r'D:/AI_project/dataset_2'
 
 
 class DateSet:
@@ -16,8 +18,8 @@ class DateSet:
         :param image: 图片路径
         :return: None
         """
-        img = cv.imread(image, cv.IMREAD_COLOR)
-        img = cv.resize(img,(180, 180))
+        # img = cv.imread(image, cv.IMREAD_COLOR)
+        img = cv.resize(image, (108, 108))
         ycrcb = cv.cvtColor(img, cv.COLOR_BGR2YCR_CB)
 
         (y, cr, cb) = cv.split(ycrcb)
@@ -44,7 +46,7 @@ class DateSet:
         print('(提示：单击需要标记的坐标，Enter确定，Esc跳过，其它重试。)')
         points = []
 
-        def onMouse(event, x, y):
+        def onMouse(event, x, y, a, b):
             if event == cv.EVENT_LBUTTONDOWN:
                 cv.circle(temp_img, (x, y), 10, (102, 217, 239), -1)
                 points.append([x, y])
@@ -119,31 +121,49 @@ class DateSet:
             cv.namedWindow('Point', 0)
             cv.resizeWindow('Point', 720, 720)
             temp_name = img.replace('.jpeg', '').split('-')[0]
-            pos = self.SetPoints('Point', cv.imread(path_name + img))
-            os.rename(path_name + img,
-                      path_name + temp_name.replace('.jpeg', '') +
+            pos = self.SetPoints('Point', cv.imread(path_name + '/' + img))
+            os.rename(path_name + '/' + img,
+                      path_name + '/' + temp_name.replace('.jpeg', '') +
                       '-' + pos.replace('[', '').replace(']', '') + '.jpeg')
 
     # 图像二值化
     def Binary_IMG(self, path_name):
         for img in os.listdir(path_name):
-            img_arr = self.cr_otsu(path_name + img)
+            img_arr = self.cr_otsu(path_name + '/' + img)
             # 显示图像
-            cv.imwrite(path_name + r'/Binary/' + img.replace('.jpeg', '') + '_binary.jpeg', img_arr)
-            cv.imshow("title", img_arr)
+            # img_arr = cv.imread(path_name+'/'+img)
+            # img_arr = cv.Canny(img_arr, threshold1=30, threshold2=180)  # 八领域法
+            cv.imwrite(path_name + '/' + img.replace('.jpeg', '') + '_binary.jpeg', img_arr)
+            # cv.imshow("title", img_arr)
             # 进程不结束，一直保持显示状态
-            cv.waitKey(0)
+            # cv.waitKey(0)
             # 销毁所有窗口
-            cv.destroyAllWindows()
+            # cv.destroyAllWindows()
+
+    def Hog_ft(self, img_arr):
+        # for img in os.listdir(path_name):
+        # img_arr = self.cr_otsu(path_name + '/' + img)
+        # img_arr = cv.imread(path_name + '/' + img)
+        img_arr = cv.resize(img_arr, (108, 108))
+        # img_arr = cv.cvtColor(img_arr, cv.COLOR_BGR2GRAY)
+        features = ft.hog(img_arr, pixels_per_cell=(8, 8), cells_per_block=(4, 4), visualize=False)
+        # cv.imshow('0', features[1])
+        # cv.waitKey(0)
+        # cv.imwrite(path_name + '/' + img.replace('.jpeg', '') + '_hog.png', features[1])
+        return features
 
     # 打包数据集
     def PackData(self, path_name):
         with open('./dataset.pkl', 'wb') as f:
             img_label = []
             for img in os.listdir(path_name):
-                column, row = img.replace('_binary.jpeg', '').split('-')[1].split(',')[0:2]
-                img_array = cv.imread(path_name + img,-1).astype('float32').flatten()
-                temp = [np.array(float(column)/6+float(row)*180, dtype='float32'), img_array]
+                column, row = img.replace('.jpeg', '').split('-')[1].split(',')[0:2]
+                img = cv.imread(path_name + '/' + img)
+                img = self.cr_otsu(img)
+                features = self.Hog_ft(img)
+                # clbp = local_binary_pattern(cv.imread(path_name+'/'+img), 8, 1, method="ror")
+                # img_array = cv.imread(path_name + '/' + img, -1).astype('float32').flatten()
+                temp = [np.array([float(column) / 5, float(row) / 5], dtype='float32'), features]
                 img_label.append(temp)
             pickle.dump(img_label, f)
 
@@ -151,7 +171,8 @@ class DateSet:
 Processor = DateSet()
 # Processor.Point_IMG(path)
 # Processor.Binary_IMG(path)
-Processor.PackData(r'D:/AI_project/dataset_binary/')
-data=open(r'./dataset.pkl','rb')
-a=pickle.load(data)
+# Processor.Hog_ft(path)
+Processor.PackData(path)
+# data=open(r'./dataset.pkl','rb')
+# a=pickle.load(data)
 cv.waitKey(0)
