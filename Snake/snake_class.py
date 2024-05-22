@@ -10,6 +10,7 @@ class Snake:
         x2 = (col + 1) * self.Unit_size
         y2 = (row + 1) * self.Unit_size
         can.create_rectangle(x1, y1, x2, y2, fill=unit_color, outline="")
+        self.win.update()
 
     # 绘制背景
     def put_a_background(self, can, color='white'):
@@ -17,6 +18,7 @@ class Snake:
             for y in range(self.Row):
                 self.draw_a_unit(can, x, y, unit_color=color)
                 self.game_map.append([x, y])
+        self.win.update()
 
     def set_pic(self, pic=None):
         return self.canvas.create_image(0, 0, anchor=tk.NW, image=pic)
@@ -111,6 +113,7 @@ class Snake:
             else:
                 self.Time += 2
             self.str_time.set('Time:' + str(self.Time))
+            self.win.update()
         return snke_list
 
     # 游戏结束
@@ -240,7 +243,7 @@ class Snake:
         self.score_label.place(x=(self.Width - 400) / 2, y=self.Height)
         self.energy_label.place(x=(self.Width - 100) / 2, y=self.Height)
         self.time_label.place(x=(self.Width + 200) / 2, y=self.Height)
-        # self.set_in_windows()
+        self.set_in_windows()
         # 绑定按键
         self.key_bind(self.canvas)
 
