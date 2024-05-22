@@ -1,16 +1,17 @@
+import copy
+import math
 import os
 import pickle
+import random
 
 import cv2 as cv
 import numpy as np
 from skimage import feature as ft
-from skimage.feature import local_binary_pattern
-
-path = r'D:/AI_project/dataset_2'
 
 
 class DateSet:
     def __init__(self):
+        self.path = r'D:/AI_project/dataset4'
         return
 
     def cr_otsu(self, image):
@@ -140,13 +141,33 @@ class DateSet:
             # 销毁所有窗口
             # cv.destroyAllWindows()
 
+    def rotationIMG(self, img, column, row):
+        angle = random.uniform(-180.0, 180.0)
+        Rimg = copy.copy(img)
+        # cv.circle(Rimg,(int(column/10),int(row/10)),5,(0,0,255),-1)
+        # cv.imshow('1',Rimg)
+        # cv.waitKey(0)
+        RColumn = copy.copy(column)
+        RRow = copy.copy(row)
+        rows, cols = Rimg.shape
+        M = cv.getRotationMatrix2D((cols / 2.0, rows / 2.0), angle, 1)
+        rotated = cv.warpAffine(Rimg, M, (cols, rows))
+        RRow = (RRow - 540) * math.cos(angle) - (RColumn - 540) * math.sin(angle) + 540
+        RColumn = (RRow - 540) * math.sin(angle) + (RColumn - 540) * math.cos(angle) + 540
+        RRow = min(max(0, RRow), 1080)
+        RColumn = min(max(0, RColumn), 1080)
+        # cv.circle(rotated,(int(RColumn/10),int(RRow/10)),1,(0,0,255),-1)
+        # cv.imshow('0',rotated)
+        # cv.waitKey(0)
+        return rotated, RColumn, RRow
+
     def Hog_ft(self, img_arr):
         # for img in os.listdir(path_name):
         # img_arr = self.cr_otsu(path_name + '/' + img)
         # img_arr = cv.imread(path_name + '/' + img)
         img_arr = cv.resize(img_arr, (108, 108))
         # img_arr = cv.cvtColor(img_arr, cv.COLOR_BGR2GRAY)
-        features = ft.hog(img_arr, pixels_per_cell=(8, 8), cells_per_block=(4, 4), visualize=False)
+        features = ft.hog(img_arr, pixels_per_cell=(16, 16), cells_per_block=(4, 4), visualize=False)
         # cv.imshow('0', features[1])
         # cv.waitKey(0)
         # cv.imwrite(path_name + '/' + img.replace('.jpeg', '') + '_hog.png', features[1])
@@ -154,25 +175,32 @@ class DateSet:
 
     # 打包数据集
     def PackData(self, path_name):
-        with open('./dataset.pkl', 'wb') as f:
+        with open(r'D:\AI_project\dataset\dataset.pkl', 'wb') as f:
+        # with open(r'D:\AI_project\dataset\dataset_test.pkl', 'wb') as f:
             img_label = []
             for img in os.listdir(path_name):
                 column, row = img.replace('.jpeg', '').split('-')[1].split(',')[0:2]
                 img = cv.imread(path_name + '/' + img)
                 img = self.cr_otsu(img)
+                # for i in range(2):
+                #     img2, column2, row2 = self.rotationIMG(img, float(column), float(row))
+                #     features2 = self.Hog_ft(img2)
+                #     temp2 = [np.array([float(column) / 10, float(row) / 10], dtype='float32'), features2]
+                #     img_label.append(temp2)
                 features = self.Hog_ft(img)
+                temp = [np.array([float(column) / 10, float(row) / 10], dtype='float32'), features]
+                img_label.append(temp)
                 # clbp = local_binary_pattern(cv.imread(path_name+'/'+img), 8, 1, method="ror")
                 # img_array = cv.imread(path_name + '/' + img, -1).astype('float32').flatten()
-                temp = [np.array([float(column) / 5, float(row) / 5], dtype='float32'), features]
-                img_label.append(temp)
             pickle.dump(img_label, f)
 
 
-Processor = DateSet()
-# Processor.Point_IMG(path)
-# Processor.Binary_IMG(path)
-# Processor.Hog_ft(path)
-Processor.PackData(path)
-# data=open(r'./dataset.pkl','rb')
-# a=pickle.load(data)
-cv.waitKey(0)
+if __name__ == '__main__':
+    Processor = DateSet()
+    # Processor.Point_IMG(Processor.path)
+    # Processor.Binary_IMG(path)
+    # Processor.Hog_ft(path)
+    Processor.PackData(Processor.path)
+    # data=open(r'./dataset.pkl','rb')
+    # a=pickle.load(data)
+    # cv.waitKey(0)
