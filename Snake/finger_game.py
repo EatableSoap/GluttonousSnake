@@ -5,7 +5,7 @@ from snake_class import Snake
 from FingerModel import FingerModel
 
 path_name = r'D:/AI_project/dataset'
-ip = "10.198.249.38"
+ip = "10.198.220.20"
 port = "8080"
 url = "http://" + ip + ":" + port + "/video"
 
@@ -14,7 +14,7 @@ game = Snake(Fps=100, row=40, column=40, Unit_size=20)
 control = keyboard.Controller()
 
 Model = FingerModel()
-Model.load(path_name)
+Model.load('./Dataset')
 
 last_frame = np.zeros((108, 108))
 count = 0

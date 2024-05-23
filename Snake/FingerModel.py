@@ -9,7 +9,6 @@ from sklearn.multioutput import RegressorChain
 from dataset import DateSet
 from sklearn.metrics import mean_squared_error
 
-path_name = r'D:/AI_project/dataset'
 
 
 class FingerModel:
@@ -87,19 +86,21 @@ class FingerModel:
                 x_data.append(data[1])
             self.y_data = np.array(y_data).reshape(len(datas), -1)
             self.x_data = np.array(x_data).reshape(len(datas), -1)
-        with open(path + r'/dataset_test.pkl', 'rb') as f:
-            data_test=pickle.load(f)
-            x_test=[]
-            y_test=[]
-            for data in data_test:
-                y_test.append(data[0])
-                x_test.append(data[1])
-            self.y_test = np.array(y_test).reshape(len(data_test), -1)
-            self.x_test = np.array(x_test).reshape(len(data_test), -1)
+        # with open(path + r'/dataset_test.pkl', 'rb') as f:
+        #     data_test=pickle.load(f)
+        #     x_test=[]
+        #     y_test=[]
+        #     for data in data_test:
+        #         y_test.append(data[0])
+        #         x_test.append(data[1])
+        #     self.y_test = np.array(y_test).reshape(len(data_test), -1)
+        #     self.x_test = np.array(x_test).reshape(len(data_test), -1)
 
 
 
 if __name__ == '__main__':
+    # path_name = r'D:/AI_project/dataset'
+    path_name = './Dataset'
     a = FingerModel()
     a.ReadData(path_name)
     Processor = DateSet()
