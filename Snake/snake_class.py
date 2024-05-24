@@ -27,7 +27,7 @@ class Snake:
     def draw_the_snake(self, can, snake, color='green'):
         for i in range(len(snake)):
             if i == 0:
-                self.draw_a_unit(can, snake[i][0], snake[i][1], unit_color='black')
+                self.draw_a_unit(can, snake[i][0], snake[i][1], unit_color='purple')
             else:
                 self.draw_a_unit(can, snake[i][0], snake[i][1], unit_color=color)
 
@@ -67,14 +67,17 @@ class Snake:
             self.Dirc = [delta_x, delta_y]
         return
 
-    # 生成食物,判断是否有食物
+    # 生成食物,判断是否有食物和获胜条件
     def food(self, snke_list):
         if self.Have_food:
             return
         valid_position = [i for i in self.game_map if i not in snke_list]
-        self.Food_pos = rd.choice(valid_position)
-        self.draw_a_unit(self.canvas, self.Food_pos[0], self.Food_pos[1], unit_color='red')
-        self.Have_food = True
+        if valid_position:
+            self.Food_pos = rd.choice(valid_position)
+            self.draw_a_unit(self.canvas, self.Food_pos[0], self.Food_pos[1], unit_color='red')
+            self.Have_food = True
+        else:
+            self.winFlag = 1
         return
 
     # 判断蛇吃食物
@@ -100,14 +103,16 @@ class Snake:
                 self.draw_a_unit(self.canvas, snke_list[-1][0], snke_list[-1][1], unit_color="white")
                 snke_list.pop(-1)
                 self.draw_a_unit(self.canvas, snke_list[1][0], snke_list[1][1])
-                self.draw_a_unit(self.canvas, temp_head[0], temp_head[1], unit_color="black")
+                self.draw_a_unit(self.canvas, temp_head[0], temp_head[1], unit_color="purple")
+                self.draw_a_unit(self.canvas, snke_list[-1][0], snke_list[-1][1], unit_color='orange')
             else:
                 self.Score += 1
                 self.Energy = min(400, self.Energy + 199)
                 self.str_score.set('Score:' + str(self.Score))
                 self.str_energy.set('Energy:' + str(self.Energy))
+                self.draw_a_unit(self.canvas, snke_list[-1][0], snke_list[-1][1], unit_color="orange")
                 self.draw_a_unit(self.canvas, snke_list[1][0], snke_list[1][1])
-                self.draw_a_unit(self.canvas, temp_head[0], temp_head[1], unit_color="black")
+                self.draw_a_unit(self.canvas, temp_head[0], temp_head[1], unit_color="purple")
             if rush:
                 self.Time += 1
             else:
@@ -142,6 +147,10 @@ class Snake:
     def game_loop(self):
         self.win.update()
         self.food(self.snake_list)
+        if self.winFlag:
+            self.over_label = tk.Label(self.win, text='You Win!', font=('楷体', 25), width=15, height=1)
+            self.over_label.place(x=(self.Width - 260) / 2, y=(self.Height - 40) / 2, bg=None)
+            self.win.update()
         self.snake_list = self.move_snake(self.snake_list, self.Dirc, False)
         if self.game_over(self.snake_list):
             self.over_label = tk.Label(self.win, text='Game Over', font=('楷体', 25), width=15, height=1)
@@ -174,6 +183,7 @@ class Snake:
         if not self.over_label is int:
             self.over_label.destroy()
             self.win.update()
+        self.winFlag = 0
         self.pause_flag = -1
         self.Dirc = [0, 0]
         self.Score = 0
@@ -189,9 +199,9 @@ class Snake:
 
     def ramdom_snake(self):
         # 随机生成蛇的位置
-        rx = rd.randint(1, 19)
+        rx = rd.randint(1, self.Row - 2)
         deltax = rd.choice([1, -1])
-        ry = rd.randint(1, 19)
+        ry = rd.randint(1, self.Row - 2)
         head = [rx, ry]
         return [head, [rx + deltax, ry]]
 
@@ -209,6 +219,7 @@ class Snake:
         return left, top
 
     def __init__(self, row=40, column=40, Fps=100, Unit_size=20):
+        self.winFlag = 0
         self.Fps = Fps
         self.pause_flag = -1
         self.over_label = 1
