@@ -79,6 +79,7 @@ class FindWay(Snake):
 
         return None
 
+    # TODO或许有修改空间,wander原理
     def FarfromFood(self, body, goal):
         [x, y] = body[0]
         direction = [body[1][0] - body[0][0], body[1][1] - body[0][1]]
