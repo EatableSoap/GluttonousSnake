@@ -43,25 +43,25 @@ def find_dirction(event):
             delta_x = 0
             delta_y = -1
         if snake_list[0][1] < snake_list[1][1]:
-            move_snake(snake_list, [delta_x, delta_y],True)
+            move_snake(snake_list, [delta_x, delta_y], True)
     elif ch == 's':
         if snake_list[0][0] != snake_list[1][0]:  # or snake_list[0][1] > snake_list[1][1]:
             delta_x = 0
             delta_y = 1
         if snake_list[0][1] > snake_list[1][1]:
-            move_snake(snake_list, [delta_x, delta_y],True)
+            move_snake(snake_list, [delta_x, delta_y], True)
     elif ch == 'a':
         if snake_list[0][1] != snake_list[1][1]:  # or snake_list[0][0] < snake_list[1][0]:
             delta_y = 0
             delta_x = -1
         if snake_list[0][0] < snake_list[1][0]:
-            move_snake(snake_list, [delta_x, delta_y],True)
+            move_snake(snake_list, [delta_x, delta_y], True)
     elif ch == 'd':
         if snake_list[0][1] != snake_list[1][1]:  # or snake_list[0][0] > snake_list[1][0]:
             delta_y = 0
             delta_x = 1
         if snake_list[0][0] > snake_list[1][0]:
-            move_snake(snake_list, [delta_x, delta_y],True)
+            move_snake(snake_list, [delta_x, delta_y], True)
     Dirc = [delta_x, delta_y]
     return
 
@@ -90,8 +90,8 @@ def snake_eat(snke_list, pos):
 
 
 # 移动蛇
-def move_snake(snke_list, direc,rush):
-    global canvas, Score, Energy,Time
+def move_snake(snke_list, direc, rush):
+    global canvas, Score, Energy, Time
     if direc != [0, 0]:
         global Food_pos
         head_0 = snke_list[0]
@@ -154,10 +154,10 @@ def Pause_game(event=None):
 
 
 def game_loop():
-    global snake_list, Dirc, pause_flag,Time
+    global snake_list, Dirc, pause_flag, Time
     win.update()
     food(snake_list)
-    snake_list = move_snake(snake_list, Dirc,False)
+    snake_list = move_snake(snake_list, Dirc, False)
     if game_over(snake_list):
         global over_label
         over_label = tk.Label(win, text='Game Over', font=('楷体', 25), width=15, height=1)
@@ -192,7 +192,7 @@ over_label = 1
 
 def Restart_game(event):
     global over_label, win, canvas, Dirc, head, Score, game_map, snake_list, \
-        Food_pos, Have_food, str_score, str_energy, Energy,Time
+        Food_pos, Have_food, str_score, str_energy, Energy, Time
     if not over_label is int:
         over_label.destroy()
     Dirc = [0, 0]
@@ -237,23 +237,23 @@ ry = rd.randint(1, 19)
 head = [rx, ry]
 snake_list = [head, [rx + deltax, ry]]
 Energy = 400
-Time=0
+Time = 0
 Food_pos = []
 Have_food = False
 put_a_background(canvas)
 draw_the_snake(canvas, snake_list)
 str_score = tk.StringVar()
 str_energy = tk.StringVar()
-str_time=tk.StringVar()
+str_time = tk.StringVar()
 score_label = tk.Label(win, textvariable=str_score, font=('楷体', 20), width=10, height=1)
 energy_label = tk.Label(win, textvariable=str_energy, font=('楷体', 20), width=10, height=1)
 time_label = tk.Label(win, textvariable=str_time, font=('楷体', 20), width=10, height=1)
 str_score.set('Score:' + str(Score))
 str_energy.set('Energy:' + str(Energy))
-str_time.set("Time:"+str(Time))
-score_label.place(x=(Width-400) / 2, y=Height)
-energy_label.place(x=(Width-100) / 2, y=Height)
-time_label.place(x=(Width+200) / 2, y=Height)
+str_time.set("Time:" + str(Time))
+score_label.place(x=(Width - 400) / 2, y=Height)
+energy_label.place(x=(Width - 100) / 2, y=Height)
+time_label.place(x=(Width + 200) / 2, y=Height)
 # 绑定按键
 key_bind(canvas)
 # 游戏主程序

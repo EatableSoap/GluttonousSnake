@@ -1,4 +1,3 @@
-import tkinter
 import tkinter as tk
 import random as rd
 
@@ -248,6 +247,8 @@ class Snake:
         # 绑定按键
         self.key_bind(self.canvas)
 
-# game = Snake(Unit_size=20)
-# game.game_loop()
-# game.win.mainloop()
+
+if __name__ == '__main__':
+    game = Snake(Unit_size=20)
+    game.game_loop()
+    game.win.mainloop()
