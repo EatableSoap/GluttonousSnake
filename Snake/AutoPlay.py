@@ -4,6 +4,9 @@ import tkinter as tk
 from snake_class import Snake
 import heapq
 
+scores = []
+step = []
+
 
 # 搜索树
 class Node:
@@ -23,10 +26,13 @@ class Node:
 
 
 class FindWay(Snake):
-    def __init__(self, row=40, column=40, Fps=100, Unit_size=20, visualize=False):
+    global scores, step
+
+    def __init__(self, row=40, column=40, Fps=100, Unit_size=20, visualize=False, g_value: float = 1):
         super().__init__(row, column, Fps, Unit_size)
         self.path = []
         self.visualize = visualize
+        self.g_value = g_value
 
     # 判断是否需要将一个邻接点加入opnelist中
     def judge_open(self, open_list, neighbor):
@@ -37,7 +43,7 @@ class FindWay(Snake):
         return True
 
     # 由于贪吃蛇仅能沿头的两边和前方移动，故无需考虑对角代价，因此每一步的实际代价均为哈密顿距离
-    def AStar(self, body, goal, tail=None):
+    def AStar(self, body, goal):
         start = Node(None, body[0])
         end = Node(None, goal)
 
@@ -54,6 +60,7 @@ class FindWay(Snake):
                 while current.parent:
                     path.append(current.Position)
                     current = current.parent
+                del open_list
                 return path[::-1]
 
             [x, y] = current.Position
@@ -65,7 +72,7 @@ class FindWay(Snake):
                     neighbor = Node(current, next_node)
                     if neighbor in closed_list:
                         continue
-                    neighbor.g = current.g + 1
+                    neighbor.g = current.g + self.g_value
                     neighbor.h = abs(neighbor.Position[0] - end.Position[0]) + abs(
                         neighbor.Position[1] - end.Position[1])
                     neighbor.f = neighbor.g + neighbor.h
@@ -73,10 +80,12 @@ class FindWay(Snake):
                     # 判断最短路径
                     if self.judge_open(open_list, neighbor):
                         heapq.heappush(open_list, (neighbor.f, neighbor))
-                        if self.visualize and not operator.eq(next_node,self.Food_pos) and next_node not in self.snake_list:
+                        if self.visualize and not operator.eq(next_node,
+                                                              self.Food_pos) and next_node not in self.snake_list:
                             self.draw_a_unit(self.canvas, next_node[0], next_node[1], unit_color='blue')
                             self.draw_a_unit(self.canvas, next_node[0], next_node[1], unit_color='white')
-
+                    del neighbor
+        del open_list
         return None
 
     # TODO 或许有修改空间,wander原理
@@ -100,6 +109,7 @@ class FindWay(Snake):
             return [[-1, -1]]
         return [max_path]
 
+    # TODO 优化，将可填充空间尽可能填充
     def FindLonggest(self, body, tail):
         [x, y] = body[0]
         direction = [body[0][0] - body[1][0], body[0][1] - body[1][1]]
@@ -116,6 +126,7 @@ class FindWay(Snake):
             sim_body.insert(0, i)
             sim_body.pop(-1)
             record = self.AStar(sim_body[:-1], sim_body[-1])
+            del sim_body
             if record and len(record) > 1:
                 path.append(i)
                 break
@@ -133,6 +144,7 @@ class FindWay(Snake):
                     if d != len(path) - 1:
                         sim_body.pop(-1)
                 sim_path = self.AStar(sim_body[:-1], sim_body[-1])
+                del sim_body
                 if sim_path:
                     return path
         longest = self.FindLonggest(body[:-1], body[-1])
@@ -156,14 +168,27 @@ class FindWay(Snake):
     def game_loop(self):
         self.win.update()
         self.food(self.snake_list)
+        if self.winFlag:
+            self.over_label = tk.Label(self.win, text='You Win!', font=('楷体', 25), width=15, height=1)
+            self.over_label.place(x=(self.Width - 260) / 2, y=(self.Height - 40) / 2, bg=None)
+            self.win.update()
+            scores.append(self.Score)
+            step.append(self.Time)
+            self.Restart_game()
         if not self.path:
             self.move()
-        self.Dirc = self.path.pop(0)
-        self.snake_list = self.move_snake(self.snake_list, self.Dirc, False)
+        try:
+            self.Dirc = self.path.pop(0)
+            self.snake_list = self.move_snake(self.snake_list, self.Dirc, False)
+        except:
+            self.snake_list = [[0, 0], [0, 0]]
         if self.game_over(self.snake_list):
             self.over_label = tk.Label(self.win, text='Game Over', font=('楷体', 25), width=15, height=1)
             self.over_label.place(x=(self.Width - 260) / 2, y=(self.Height - 40) / 2, bg=None)
             self.win.update()
+            scores.append(self.Score)
+            step.append(self.Time)
+            self.Restart_game()
         elif self.pause_flag == -1:
             self.win.after(self.Fps, self.game_loop)
         else:
@@ -174,7 +199,7 @@ class FindWay(Snake):
             pause_button.pack_configure(expand=1)
             second.geometry("%dx%d+%d+%d" % (20, 30, 400, 400))
 
-    def Restart_game(self, event=None, ):
+    def Restart_game(self, event=None):
         if not self.over_label is int:
             self.over_label.destroy()
             self.win.update()
@@ -196,6 +221,6 @@ class FindWay(Snake):
 
 
 if __name__ == '__main__':
-    game = FindWay(Fps=0, column=15, row=15, Unit_size=20,visualize=False)
+    game = FindWay(Fps=0, column=20, row=20, Unit_size=20, visualize=False, g_value=1.01)
     game.game_loop()
     game.win.mainloop()

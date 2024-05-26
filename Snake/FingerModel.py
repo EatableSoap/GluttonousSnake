@@ -1,74 +1,37 @@
 import numpy as np
 import cv2 as cv
 import pickle
-from sklearn.svm import SVR
-from skimage import feature as ft
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.svm import LinearSVR
 from sklearn.multioutput import RegressorChain
 from dataset import DateSet
-from sklearn.metrics import mean_squared_error
 
 
-
-class FingerModel:
+class FingerModel(DateSet):
     def __init__(self, path=r'D:/AI_project/dataset'):
-        model = SVR(C=1.5, kernel='linear')
-        # model=DecisionTreeRegressor(max_depth=10)
-        self.clf = RegressorChain(model)
+        super().__init__()
+        model = LinearSVR(C=3, dual=False, loss='squared_epsilon_insensitive', max_iter=10000000)
+        # model=DecisionTreeRegressor(max_depth=1000000)
+        self.clf1 = RegressorChain(model, order=[1, 0])
+        self.clf2 = RegressorChain(model, order=[0, 1])
+        self.clf = [self.clf1, self.clf2]
+        # self.clf = MultiOutputRegressor(model)
         self.x_data = np.zeros(1)
         self.y_data = np.zeros(1)
         self.x_test = np.zeros(1)
         self.y_test = np.zeros(1)
         self.path = path
 
-    # YCrCb颜色空间的Cr分量+Otsu阈值分割获取二值图
-    def cr_otsu(self, image):
-        """
-        :param image: 图片路径
-        :return: None
-        """
-        # img = cv.imread(image, cv.IMREAD_COLOR)
-        ycrcb = cv.cvtColor(image, cv.COLOR_BGR2YCR_CB)
-
-        (y, cr, cb) = cv.split(ycrcb)
-        cr1 = cv.GaussianBlur(cr, (5, 5), 0)
-        _, skin = cv.threshold(cr1, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
-
-        # cv.namedWindow("image raw", cv.WINDOW_NORMAL)
-        # cv.imshow("image raw", img)
-        # cv.namedWindow("image CR", cv.WINDOW_NORMAL)
-        # cv.imshow("image CR", cr1)
-        # cv.namedWindow("Skin Cr+OTSU", cv.WINDOW_NORMAL)
-        # cv.imshow("Skin Cr+OTSU", skin)
-
-        # dst = cv.bitwise_and(img, img, mask=skin)
-        # cv.namedWindow("seperate", cv.WINDOW_NORMAL)
-        # cv.imshow("seperate", dst)
-        # cv.waitKey()
-        return skin
-
-    def Hog_ft(self, img_arr):
-        # for img in os.listdir(path_name):
-        # img_arr = self.cr_otsu(path_name + '/' + img)
-        # img_arr = cv.imread(path_name + '/' + img)
-        img_arr = cv.resize(img_arr, (108, 108))
-        # img_arr = cv.cvtColor(img_arr, cv.COLOR_BGR2GRAY)
-        features = ft.hog(img_arr, pixels_per_cell=(16, 16), cells_per_block=(4, 4), visualize=False)
-        # cv.imshow('0', features[1])
-        # cv.waitKey(0)
-        # cv.imwrite(path_name + '/' + img.replace('.jpeg', '') + '_hog.png', features[1])
-        return features
-
-    def FindFingerPos(self, img):
-        contours, hierarchy = cv.findContours(img, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-        hull = cv.convexHull(contours[0], returnPoints=False)
-        # cv.polylines(img, [hull], True, (255, 255, 0), 2)
-        return hull
+    # 寻找凸包
+    # def FindFingerPos(self, img):
+    #     contours, hierarchy = cv.findContours(img, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+    #     hull = cv.convexHull(contours[0], returnPoints=False)
+    #     return hull
 
     def train(self, path):
         # self.clf = RandomForestRegressor()
-        self.clf.fit(self.x_data, self.y_data)
+        self.clf[0].fit(self.x_data, self.y_data)
+        self.clf[1].fit(self.x_data, self.y_data)
+        # self.clf.fit(self.x_data,self.y_data)
         with open(path + r'/clf.pkl', 'wb') as f:
             pickle.dump(self.clf, f)
 
@@ -76,6 +39,7 @@ class FingerModel:
         with open(path + r'/clf.pkl', 'rb') as f:
             self.clf = pickle.load(f)
 
+    # 载入数据集
     def ReadData(self, path):
         with open(path + r'/dataset.pkl', 'rb') as f:
             datas = pickle.load(f)
@@ -86,28 +50,19 @@ class FingerModel:
                 x_data.append(data[1])
             self.y_data = np.array(y_data).reshape(len(datas), -1)
             self.x_data = np.array(x_data).reshape(len(datas), -1)
-        # with open(path + r'/dataset_test.pkl', 'rb') as f:
-        #     data_test=pickle.load(f)
-        #     x_test=[]
-        #     y_test=[]
-        #     for data in data_test:
-        #         y_test.append(data[0])
-        #         x_test.append(data[1])
-        #     self.y_test = np.array(y_test).reshape(len(data_test), -1)
-        #     self.x_test = np.array(x_test).reshape(len(data_test), -1)
-
 
 
 if __name__ == '__main__':
     # path_name = r'D:/AI_project/dataset'
-    path_name = './Dataset'
+    path_name = r'./dataset'
     a = FingerModel()
     a.ReadData(path_name)
-    Processor = DateSet()
-    try:
-        a.load(path_name)
-        print('Load Model')
-    except:
-        print('No Model Load')
-    Processor.PackData(Processor.path)
+    # Processor = DateSet()
+    # try:
+    #     a.load(path_name)
+    #     print('Load Model')
+    # except:
+    #     print('No Model Load')
+    # Processor.PackData(Processor.path)
     a.train(path_name)
+    cv.waitKey(0)
