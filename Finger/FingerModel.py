@@ -54,7 +54,7 @@ class FingerModel(DateSet):
 
 if __name__ == '__main__':
     # path_name = r'D:/AI_project/dataset'
-    path_name = r'./dataset'
+    path_name = r'dataset'
     a = FingerModel()
     a.ReadData(path_name)
     # Processor = DateSet()

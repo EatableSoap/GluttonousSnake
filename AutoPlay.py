@@ -1,7 +1,7 @@
 import copy
 import operator
 import tkinter as tk
-from SnakeClass import Snake
+from GluttonousSnake.Snake.Snake import Snake
 import heapq
 
 scores = []
