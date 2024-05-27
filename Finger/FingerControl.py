@@ -1,8 +1,8 @@
 import cv2 as cv
 import numpy as np
 from pynput import keyboard
-from SnakeClass import Snake
-from GluttonousSnake.Snake.Finger.FingerModel import FingerModel
+from GluttonousSnake.Snake.SnakeClass import Snake
+from FingerModel import FingerModel
 
 # 获取视频地址
 path_name = r'D:/AI_project/dataset'

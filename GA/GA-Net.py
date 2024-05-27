@@ -1,5 +1,5 @@
 import torch
-import SnakeClass
+import GluttonousSnake.Snake.SnakeClass
 
 
 class SnakeNet(torch.nn.Module):
