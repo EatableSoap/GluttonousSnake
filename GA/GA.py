@@ -13,7 +13,7 @@ def SelectChild(childs, select_rate=0.1):
     return sorted_child[:int(len(childs) * select_rate)]
 
 
-def UniformCrossover(parent1: torch.tensor, parent2, cross_rate=0.1):
+def UniformCrossover(parent1, parent2, cross_rate=0.1):
     gene1 = parent1.gene.contiguous()
     gene2 = parent2.gene.contiguous()
     temp1 = gene1.numpy()
@@ -25,11 +25,10 @@ def UniformCrossover(parent1: torch.tensor, parent2, cross_rate=0.1):
     return gene1, gene2
 
 
-def Variation(individual: torch.tensor, mutation_rate=0.01):
-    gene = individual.gene.contiguous()
-    temp = gene.numpy()
-    for i in range(len(temp)):
+def Variation(individual, mutation_rate=0.01):
+    gene = individual.gene.numpy()
+    for i in range(len(gene)):
         rate = random.uniform(0, 1)
         if rate <= mutation_rate:
-            temp[i] += random.uniform(-1, 1)
-    return gene
+            gene[i] += random.uniform(-1, 1)
+    return individual
