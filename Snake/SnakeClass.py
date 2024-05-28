@@ -1,3 +1,4 @@
+import random
 import tkinter as tk
 import random as rd
 
@@ -19,9 +20,6 @@ class Snake:
                 self.draw_a_unit(can, x, y, unit_color=color)
                 self.game_map.append([x, y])
         self.win.update()
-
-    def set_pic(self, pic=None):
-        return self.canvas.create_image(0, 0, anchor=tk.NW, image=pic)
 
     # 绘制蛇
     def draw_the_snake(self, can, snake, color='green'):
@@ -78,6 +76,7 @@ class Snake:
             self.Have_food = True
         else:
             self.winFlag = 1
+        del valid_position
         return
 
     # 判断蛇吃食物
@@ -107,7 +106,7 @@ class Snake:
                 self.draw_a_unit(self.canvas, snke_list[-1][0], snke_list[-1][1], unit_color='orange')
             else:
                 self.Score += 1
-                self.Energy = min(400, self.Energy + 199)
+                self.Energy = min(int(self.Column * self.Row * 0.25), self.Energy + int(self.Column * self.Row * 0.125))
                 self.str_score.set('Score:' + str(self.Score))
                 self.str_energy.set('Energy:' + str(self.Energy))
                 self.draw_a_unit(self.canvas, snke_list[-1][0], snke_list[-1][1], unit_color="orange")
@@ -119,6 +118,7 @@ class Snake:
                 self.Time += 2
             self.str_time.set('Time:' + str(self.Time))
             self.win.update()
+            del temp_head
         return snke_list
 
     # 游戏结束
@@ -187,7 +187,7 @@ class Snake:
         self.pause_flag = -1
         self.Dirc = [0, 0]
         self.Score = 0
-        self.Energy = 400
+        self.Energy = int(self.Column * self.Row * 0.25)
         self.Time = 0
         self.snake_list = self.ramdom_snake()
         self.Food_pos = []
@@ -195,15 +195,18 @@ class Snake:
         self.put_a_background(self.canvas)
         self.draw_the_snake(self.canvas, self.snake_list)
         self.setlable()
-        self.key_bind(self.canvas)
 
     def ramdom_snake(self):
         # 随机生成蛇的位置
         rx = rd.randint(1, self.Row - 2)
-        deltax = rd.choice([1, -1])
+        delta = rd.choice([1, -1])
         ry = rd.randint(1, self.Row - 2)
         head = [rx, ry]
-        return [head, [rx + deltax, ry]]
+        rate = random.random()
+        if rate >= 0.5:
+            return [head, [rx + delta, ry]]
+        else:
+            return [head, [rx, ry + delta]]
 
     def setlable(self):
         self.str_score.set('Score:' + str(self.Score))
@@ -215,7 +218,7 @@ class Snake:
         screenHeight = self.win.winfo_screenheight()  # 获取显示区域的高度
         left = (screenWidth - self.Width) / 2
         top = (screenHeight - (self.Height + 2 * self.Unit_size)) / 2
-        self.win.geometry("%dx%d+%d+%d" % (self.Width, self.Height, left, top))
+        self.win.geometry("%dx%d+%d+%d" % (self.Width, self.Height + 4 * self.Unit_size, left, top))
         return left, top
 
     def __init__(self, row=40, column=40, Fps=100, Unit_size=20):
@@ -231,13 +234,13 @@ class Snake:
         self.win = tk.Tk()
         self.win.attributes("-transparentcolor", "white")
         self.win.title("Snake")
-        self.canvas = tk.Canvas(self.win, width=self.Width, height=self.Height + 2 * self.Unit_size)
-        self.canvas.pack()
+        self.canvas = tk.Canvas(self.win, width=self.Width, height=self.Height)  # * self.Unit_size)
+        self.canvas.grid()
         self.Dirc = [0, 0]
         self.Score = 0
         self.game_map = []
         self.snake_list = self.ramdom_snake()
-        self.Energy = 400
+        self.Energy = int(self.Column * self.Row * 0.25)
         self.Time = 0
         self.Food_pos = []
         self.Have_food = False
@@ -246,14 +249,20 @@ class Snake:
         self.str_score = tk.StringVar()
         self.str_energy = tk.StringVar()
         self.str_time = tk.StringVar()
-        self.score_label = tk.Label(self.win, textvariable=self.str_score, font=('楷体', Unit_size), width=10, height=1)
-        self.energy_label = tk.Label(self.win, textvariable=self.str_energy, font=('楷体', Unit_size), width=10,
+        self.score_label = tk.Label(self.win, textvariable=self.str_score, font=('楷体', int(0.75 * Unit_size)),
+                                    width=10, height=1)
+        self.energy_label = tk.Label(self.win, textvariable=self.str_energy, font=('楷体', int(0.75 * Unit_size)),
+                                     width=10,
                                      height=1)
-        self.time_label = tk.Label(self.win, textvariable=self.str_time, font=('楷体', Unit_size), width=10, height=1)
+        self.time_label = tk.Label(self.win, textvariable=self.str_time, font=('楷体', int(0.75 * Unit_size)), width=10,
+                                   height=1)
         self.setlable()
-        self.score_label.place(x=(self.Width - 400) / 2, y=self.Height)
-        self.energy_label.place(x=(self.Width - 100) / 2, y=self.Height)
-        self.time_label.place(x=(self.Width + 200) / 2, y=self.Height)
+        # self.score_label.place(x=(self.Width - 400) / 2, y=self.Height)
+        # self.energy_label.place(x=(self.Width - 100) / 2, y=self.Height)
+        # self.time_label.place(x=(self.Width + 200) / 2, y=self.Height)
+        self.score_label.grid()
+        self.energy_label.grid()
+        self.time_label.grid()
         self.set_in_windows()
         # 绑定按键
         self.key_bind(self.canvas)
