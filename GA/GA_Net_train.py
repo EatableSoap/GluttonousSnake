@@ -1,25 +1,26 @@
 import os.path
 import random
-import tkinter
 
 import torch
-from GluttonousSnake.Snake.SnakeClass import Snake
+from SnakeClass_NoGraph import Snake
+# from GluttonousSnake.Snake.SnakeClass import Snake
 import numpy as np
 import pickle
+import multiprocessing as mp
 
 
 class SnakeNet(torch.nn.Module):
-    def __init__(self,in_feature=32,hidden1_featute=20,hidden2_feature=12,out_feature=4):
+    def __init__(self, in_feature=32, hidden1_featute=20, hidden2_feature=12, out_feature=4):
         super(SnakeNet, self).__init__()
         self.Input = torch.nn.Linear(in_feature, hidden1_featute)
         self.HiddenLayer = torch.nn.Linear(hidden1_featute, hidden2_feature)
         self.Output = torch.nn.Linear(hidden2_feature, out_feature)
-        self.relu = torch.nn.ReLU
-        self.sigmoid = torch.nn.Sigmoid
+        self.relu = torch.nn.ReLU()
+        self.sigmoid = torch.nn.Sigmoid()
 
-    def forward(self,x):
+    def forward(self, x):
         y = self.Input(x)
-        y = self.relu(y)
+        y = self.sigmoid(y)
         y = self.HiddenLayer(y)
         y = self.sigmoid(y)
         y = self.Output(y)
@@ -28,8 +29,8 @@ class SnakeNet(torch.nn.Module):
 
 
 class SnakeGame(Snake):
-    def __init__(self, row=5, column=5, Fps=0, Unit_size=20):
-        super(SnakeGame, self).__init__(row, column, Fps, Unit_size)
+    def __init__(self, row=5, column=5, Fps=100):
+        super(SnakeGame, self).__init__(row, column, Fps)
         # 方向字典，无需写函数
         self.dir_dict = {
             '[0.0, -1.0]': [1.0, 0.0, 0.0, 0.0],
@@ -77,11 +78,8 @@ class SnakeGame(Snake):
 
     # 重写gameloop，不用手动更新了
     def game_loop(self):
-        self.win.update()
         self.food(self.snake_list)
         if self.winFlag:
-            # self.win.destroy()
-            self.win.quit()
             return False
         in_features = self.returnFeature()
         idx = self.net.forward(in_features).contiguous()  # 获取最大概率索引
@@ -98,19 +96,14 @@ class SnakeGame(Snake):
                 break
         temp_dir = [0.0, 0.0, 0.0, 0.0]
         temp_dir[max_i] = 1.0
-        self.Dirc = self.dir_dict[str(temp_dir)]
-        self.snake_list = self.move_snake(self.snake_list, self.Dirc, False)
+        self.snake_list = self.move_snake(self.snake_list, self.dir_dict[str(temp_dir)], False)
         del idx
         if self.game_over(self.snake_list):
-            # self.win.destroy()
-            self.win.quit()
             return False
         else:
-            self.win.after(self.Fps, self.game_loop)
             return True
 
     def Restart_game(self, event=None):
-        self.canvas.delete(tkinter.ALL)  # 重写了这个和删除了一些不必要东西
         self.winFlag = 0
         self.pause_flag = -1
         self.Dirc = [0, 0]
@@ -120,9 +113,12 @@ class SnakeGame(Snake):
         self.snake_list = self.ramdom_snake()
         self.Food_pos = []
         self.Have_food = False
-        self.put_a_background(self.canvas, color='white')
-        self.draw_the_snake(self.canvas, self.snake_list)
-        self.setlable()
+
+        # 这里取消注释外加import NOGraph下另外一个SnakeClass可以看见具体在训练什么
+        # self.canvas.delete(tkinter.ALL)  # 重写了这个和删除了一些不必要东西
+        # self.put_a_background(self.canvas, color='white')
+        # self.draw_the_snake(self.canvas, self.snake_list)
+        # self.setlable()
 
 
 class Individual:
@@ -131,6 +127,7 @@ class Individual:
         self.fitness = 0
         self.generation = generation
         self.No = No
+        self.score = 0
 
     # 基因为一个tensor，需要将其按一定格式读入Model中
     def gene2State(self):
@@ -150,12 +147,14 @@ class Individual:
         self.fitness = (score + 2 ** min(score + 6, 13)) ** 2 + 10000 / (
                 time ** 0.01 + 1 / time ** 0.01) - 100.0 * distance
         # / - 10.0 / (energy + 1)
+        self.score = score
         return
 
     def CalFitness(self, snakegame: SnakeGame):
         snakegame.net.load_state_dict(self.gene2State())
-        snakegame.game_loop()
-        snakegame.win.mainloop()
+        while snakegame.game_loop():
+            return
+        # snakegame.win.mainloop()
         dist = abs(snakegame.snake_list[0][0] - snakegame.Food_pos[0]) + abs(
             snakegame.snake_list[0][1] - snakegame.Food_pos[1])
         self.getFitnessParam(snakegame.Score, snakegame.Time, dist, snakegame.Energy)
@@ -163,28 +162,29 @@ class Individual:
 
 
 # 选择父母
-def SelectChild(childs, f_mean, select_rate=0.1):
-    # sorted_child = sorted(childs, key=lambda x: x.fitness)
+def SelectChild(childs, f_mean):
+    sorted_child = sorted(childs, key=lambda x: x.fitness)
     rate_all = [0]
-    f_all = 0
-    for i in childs:
-        f_all += i.fitness - f_mean
+    # f_all = 0
+    # for i in childs:
+    #     f_all += i.fitness - f_mean
+    # f_all = max(1e-5, f_all)
     for i in range(len(childs)):
-        # rate = int(1 / len(sorted_child) * (0.0004 + (1.9996 - 0.0004) * i / (len(sorted_child) - 1)) * 100000)
-        rate = (childs[i].fitness - f_mean) / f_all * 100000
+        rate = 2 - 1.3 + 2 * (1.3 - 1.0) * i / (len(childs) - 1)
+        # rate = max((childs[i].fitness - f_mean),1e-5) / (f_all + 1) * 100000
         rate_all.append(rate_all[i] + rate)
     select = []
-    for i in range(int(len(childs) * select_rate)):
+    for i in range(2):
         idx = random.uniform(1, rate_all[-1])
         ind = 0
         while rate_all[ind] < idx:
             ind += 1
-        select.append((childs[ind-1]))
-        # select.append(sorted_child[ind - 1])
+        # select.append((childs[ind - 1]))
+        select.append(sorted_child[ind - 1])
     return select
 
 
-def Crossover(parent1, parent2, f_max, f_avg, P_max=0.4, P_min=0.2):
+def Crossover(parent1, parent2, f_max, f_avg, P_max=0.95, P_min=0.75):
     # 自适应交叉概率
     if max(parent1.fitness, parent2.fitness) < f_avg:
         cross_rate = P_max
@@ -201,22 +201,23 @@ def Crossover(parent1, parent2, f_max, f_avg, P_max=0.4, P_min=0.2):
     return gene1, gene2
 
 
-def Variation(individual, total_N, cur_n):
+def Variation(individual, total_N, cur_n, scale):
     # 自适应变异概率
-    mutation_rate = 0.05 * (1.0 - random.random() ** (1.0 - cur_n / total_N))
+    mutation_rate = scale * (1.0 - random.random() ** (1.0 - cur_n / total_N))
     gene = individual.gene.numpy()
     mutation_array = np.random.random(964) < mutation_rate
     mutation = np.random.standard_cauchy(size=964)
-    mutation[mutation_array] *= 0.2
+    mutation *= 0.1
     gene[mutation_array] += mutation[mutation_array]
     return individual
 
 
 # 遗传算法主方法
-def genetic_algorithm(population_size, num_generation, gene_length=None, LastGeneration=None, Fps=100, select_rate=0.1):
+def genetic_algorithm(population_size, num_generation, ele_indi, mutationScale, Pmax, Pmin, gene_length=None,
+                      LastGeneration=None, Fps=100, foldID=1):
     # best=[]
     No = 1
-    game = SnakeGame(row=20, column=20, Fps=Fps)
+    game = SnakeGame(row=10, column=10)
     # 初始化群体或读取上一代最优个体基因
     population = []
     if not LastGeneration:
@@ -236,27 +237,32 @@ def genetic_algorithm(population_size, num_generation, gene_length=None, LastGen
         f_mean /= population_size
         best_individual = max(population, key=lambda x: x.fitness)
         # best.append(best_individual)
-        with open(r'./All/' + str(best_individual.generation) + '-' + str(best_individual.No) + '.pkl', 'wb') as ch:
+        with open(r'./All/' + str(foldID) + '/' + str(best_individual.generation) + '-' + str(
+                best_individual.No) + '.pkl', 'wb') as ch:
             pickle.dump(best_individual, ch)
         # logging
-        with open(r'./evoluiton.txt', 'a') as log:
+        with open(r'./All/'+str(foldID) + '/evoluiton.txt', 'a') as log:
             log.write(
-                f'当前代数: {best_individual.generation}\t最优个体: {best_individual.No}\t适应性: {best_individual.fitness}\n')
+                f'当前代数: {best_individual.generation}\t最优个体: {best_individual.No}\t'
+                f'适应性: {best_individual.fitness}\t 得分: {best_individual.score}\n')
         No = 1
-        parents = SelectChild(population, select_rate)
-        next_generation = [Individual(best_individual.generation + 1, No, best_individual.gene.contiguous()),
-                           Individual(best_individual.generation + 1, No, best_individual.gene.contiguous())]
-        # next_generation = []
-        # 保留上一代部分优秀样本，确保优秀样本能参与交叉变异，模型才能收敛
+        # 精英个体保留
+        # next_generation = [Individual(best_individual.generation + 1, No, best_individual.gene.contiguous())]
+        # next_generation[0].fitness = best_individual.fitness
+        # 不保留
+        # next_generation = [best_individual]*int(population_size/2)
+        next_generation = []
         while len(next_generation) < population_size:
-            parent1, parent2 = random.sample(parents, 2)
-            gene1, gene2 = Crossover(parent1, parent2, best_individual.fitness, f_mean)
+            parents = SelectChild(population, f_mean)
+            parent1, parent2 = parents[0:2]
+            # parent1, parent2 = random.sample(parents, 2)
+            gene1, gene2 = Crossover(parent1, parent2, best_individual.fitness, f_mean, Pmax, Pmin)
             child1 = Individual(parent1.generation + 1, No, gene1)
             No += 1
             child2 = Individual(parent2.generation + 1, No, gene2)
             No += 1
-            child1 = Variation(child1, num_generation, parents[0].generation)
-            child2 = Variation(child2, num_generation, parents[0].generation)
+            child1 = Variation(child1, parents[0].generation+num_generation, parents[0].generation, mutationScale)
+            child2 = Variation(child2, parents[0].generation+num_generation, parents[0].generation, mutationScale)
             child1.CalFitness(game)
             child2.CalFitness(game)
             # # 保存样本
@@ -265,21 +271,85 @@ def genetic_algorithm(population_size, num_generation, gene_length=None, LastGen
             # with open(r'./All/' + str(child2.generation) + '-' + str(child2.No) + '.pkl', 'wb') as ch:
             #     pickle.dump(child2, ch)
             next_generation.extend([child1, child2])
+        next_generation = sorted(next_generation, key=lambda n: n.fitness, reverse=True)
+        population = sorted(population, key=lambda n: n.fitness, reverse=True)
+        for x in range(1, ele_indi + 1):
+            worst_individual = next_generation[-x]
+            last_best = Individual(worst_individual.generation, worst_individual.No, population[x - 1].gene)
+            last_best.fitness = population[x - 1].fitness
+            last_best.score = population[x - 1].score
+            next_generation.pop(-x)
+            next_generation.append(last_best)
         population = next_generation
-    best_individual = max(population, key=lambda x: x.fitness)
+    best_individual = max(population, key=lambda n: n.fitness)
     # best.append(best_individual)
     # best.sort(key=lambda x:x.fitness,reverse=True)
+    del game
     return best_individual
 
 
+def mpGA(task, resultQueue):
+    while True:
+        atask = task.get()
+        if atask is None:
+            break
+        foldID, population_num, generation_num, ele, mutation, cross_max, cross_min = atask
+        # 读取最优样本
+        mp_last_generation = None
+        mp_path = os.listdir(r'./Best')
+        mp_path = sorted(mp_path, key=lambda x: int(x.split('-')[0]), reverse=True)
+        if mp_path:
+            with open(r'./Best/' + mp_path[0], 'rb') as f:
+                mp_last_generation = pickle.load(f)
+        mp_best_individual = genetic_algorithm(population_num, generation_num, ele, mutation,
+                                               cross_max, cross_min, mp_last_generation, Fps=0,foldID=foldID)
+        resultQueue.put(mp_best_individual)
+        # with open(r'./best/' + str(best.generation) + '-' + str(best.No) + '.pkl', 'w+b') as f:
+        #     pickle.dump(best, f)
+        # print(f"最好个体:{best.generation}-{best.No} \t 适应度{best.fitness}")
+
+
 if __name__ == '__main__':
-    # 读取最优样本
-    last_generation = None
-    path = os.listdir(r'./Best')
-    if path:
-        with open(r'./Best/' + path[0], 'rb') as f:
-            last_generation = pickle.load(f)
-    best = genetic_algorithm(100, 500, None, last_generation, Fps=10, select_rate=0.2)
-    with open(r'./best/' + str(best.generation) + '-' + str(best.No) + '.pkl', 'w+b') as f:
-        pickle.dump(best, f)
-    print(f"最好个体:{best.generation}-{best.No} \t 适应度{best.fitness}")
+    populations = 1000
+    generations = 100
+    ele_individual = 0
+    mutation_scale = 0.2
+    crossMax = 0.6
+    crossMin = 0.4
+    isMutiProcess = True
+    for _ in range(20):
+        if isMutiProcess:
+            n_workers = mp.cpu_count()
+            task_queue = mp.Queue()
+            result_queue = mp.Queue()
+            workers = []
+            for _ in range(n_workers):
+                worker = mp.Process(target=mpGA, args=(task_queue, result_queue))
+                worker.start()
+                workers.append(worker)
+
+            for fold_id in range(10):
+                task_queue.put((fold_id, populations, generations, ele_individual, mutation_scale, crossMax, crossMin))
+
+            result = []
+            for _ in range(10):
+                result.append(result_queue.get())
+            best = max(result, key=lambda n: n.fitness)
+            with open(r'./best/' + str(best.generation) + '-' + str(best.No) + '.pkl', 'w+b') as f:
+                pickle.dump(best, f)
+            print(f"最好个体:{best.generation}-{best.No} \t 适应度{best.fitness}\t 得分: {best.score}")
+
+            for _ in range(n_workers):
+                task_queue.put(None)
+            for worker in workers:
+                worker.join()
+        else:
+            # 读取最优样本
+            last_generation = None
+            path = os.listdir(r'./Best')
+            path = sorted(path, key=lambda x: int(x.split('-')[0]), reverse=True)
+            if path:
+                with open(r'./Best/' + path[0], 'rb') as f:
+                    last_generation = pickle.load(f)
+            BestIndividual = genetic_algorithm(populations, generations, ele_individual,
+                                               mutation_scale, crossMax, crossMin, None, last_generation, Fps=0)
