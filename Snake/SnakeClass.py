@@ -169,6 +169,14 @@ class Snake:
         #     pause_button.pack_configure(expand=1)
         #     second.geometry("%dx%d+%d+%d" % (20, 30, 400, 400))
 
+    def addFps(self,event=None):
+        self.Fps += 10
+        return
+
+    def subFps(self,event=None):
+        self.Fps = max(0, self.Fps - 10)
+        return
+
     def key_bind(self, canvas):
         canvas.focus_set()
         canvas.bind("<KeyPress-a>", self.find_dirction)
@@ -178,6 +186,8 @@ class Snake:
         canvas.bind("<KeyPress-r>", self.Restart_game)
         canvas.bind("<KeyPress-Escape>", self.Exit_game)
         canvas.bind("<KeyPress-space>", self.Pause_game)
+        canvas.bind("<KeyPress-Up>", self.addFps)
+        canvas.bind("<KeyPress-Down>", self.subFps)
 
     def Restart_game(self, event=None, ):
         if not self.over_label is int:

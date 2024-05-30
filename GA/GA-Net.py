@@ -4,28 +4,27 @@ import tkinter
 
 import torch
 from GluttonousSnake.Snake.SnakeClass import Snake
-import GA
 import numpy as np
 import pickle
 
 
 class SnakeNet(torch.nn.Module):
-    def __init__(self, in_features=None):
+    def __init__(self,in_feature=32,hidden1_featute=20,hidden2_feature=12,out_feature=4):
         super(SnakeNet, self).__init__()
-        self.in_features = in_features
-        self.Input = torch.nn.Linear(32, 20)
-        self.HiddenLayer = torch.nn.Linear(20, 12)
-        self.Output = torch.nn.Linear(12, 4)
-        self.relu = torch.relu
-        self.sigmoid = torch.sigmoid
+        self.Input = torch.nn.Linear(in_feature, hidden1_featute)
+        self.HiddenLayer = torch.nn.Linear(hidden1_featute, hidden2_feature)
+        self.Output = torch.nn.Linear(hidden2_feature, out_feature)
+        self.relu = torch.nn.ReLU
+        self.sigmoid = torch.nn.Sigmoid
 
-    def forward(self):
-        x = self.Input(self.in_features)
-        x = self.relu(x)
-        x = self.HiddenLayer(x)
-        x = self.sigmoid(x)
-        output = self.Output(x)
-        return output
+    def forward(self,x):
+        y = self.Input(x)
+        y = self.relu(y)
+        y = self.HiddenLayer(y)
+        y = self.sigmoid(y)
+        y = self.Output(y)
+        y = self.sigmoid(y)
+        return y
 
 
 class SnakeGame(Snake):
@@ -74,7 +73,7 @@ class SnakeGame(Snake):
                 x += direc[0]
                 y += direc[1]
             feature += [1.0 / dis, see_food, see_self]  # 八个视角分别为距离边缘距离倒数，视野内是否有食物、有自身
-        return torch.tensor(feature)
+        return torch.tensor(feature, dtype=torch.float32)
 
     # 重写gameloop，不用手动更新了
     def game_loop(self):
@@ -84,19 +83,19 @@ class SnakeGame(Snake):
             # self.win.destroy()
             self.win.quit()
             return False
-        self.net.in_features = self.returnFeature()
-        idx = self.net.forward().contiguous()  # 获取最大概率索引
+        in_features = self.returnFeature()
+        idx = self.net.forward(in_features).contiguous()  # 获取最大概率索引
         cur_dir = [self.snake_list[1][0] - self.snake_list[0][0],
                    self.snake_list[1][1] - self.snake_list[0][1]]  # 当前方向的反方向
-        cur_dir_reverse = 1.0 - torch.tensor(self.dir_dict[str(cur_dir)])
-        del_idx = torch.argmin(cur_dir_reverse)
+        cur_dir_reverse = 1.0 - torch.tensor(self.dir_dict[str(cur_dir)], dtype=torch.float32)
+        del_idx = torch.argmin(cur_dir_reverse).tolist()
         idx = torch.log_softmax(idx, 0).detach().numpy()
-        max_num = idx[0]
+        sort_idx = np.argsort(-idx).tolist()
         max_i = 0
-        for i in range(4):
-            if idx[i] > max_num and i != del_idx:
-                max_num = idx[i]
+        for i in sort_idx:
+            if i != del_idx:
                 max_i = i
+                break
         temp_dir = [0.0, 0.0, 0.0, 0.0]
         temp_dir[max_i] = 1.0
         self.Dirc = self.dir_dict[str(temp_dir)]
@@ -116,7 +115,7 @@ class SnakeGame(Snake):
         self.pause_flag = -1
         self.Dirc = [0, 0]
         self.Score = 0
-        self.Energy = int(self.Column * self.Row * 0.25)
+        self.Energy = int(self.Column * self.Row * 0.4)
         self.Time = 0
         self.snake_list = self.ramdom_snake()
         self.Food_pos = []
@@ -135,19 +134,22 @@ class Individual:
 
     # 基因为一个tensor，需要将其按一定格式读入Model中
     def gene2State(self):
-        I_W = self.gene[:640].contiguous().view(20, 32)
-        I_B = self.gene[640:660].contiguous()
-        H_W = self.gene[660:900].contiguous().view(12, 20)
-        H_B = self.gene[900:912].contiguous()
-        O_W = self.gene[912:960].contiguous().view(4, 12)
-        O_B = self.gene[960:964].contiguous()
-        state_dict = {'Input.weight': I_W, 'Input.bias': I_B, 'HiddenLayer.weight': H_W, 'HiddenLayer.bias': H_B,
-                      'Output.weight': O_W, 'Output.bias': O_B}
-        return state_dict
+        with torch.no_grad():
+            I_W = self.gene[:640].contiguous().view(20, 32)
+            I_B = self.gene[640:660].contiguous()
+            H_W = self.gene[660:900].contiguous().view(12, 20)
+            H_B = self.gene[900:912].contiguous()
+            O_W = self.gene[912:960].contiguous().view(4, 12)
+            O_B = self.gene[960:964].contiguous()
+            state_dict = {'Input.weight': I_W, 'Input.bias': I_B, 'HiddenLayer.weight': H_W, 'HiddenLayer.bias': H_B,
+                          'Output.weight': O_W, 'Output.bias': O_B}
+            return state_dict
 
     # 计算适应度
     def getFitnessParam(self, score, time, distance, energy):
-        self.fitness = (2000.0 * score + 100.0 * time - 0.2 * distance - 10.0 / (energy + 1)) * 10000
+        self.fitness = (score + 2 ** min(score + 6, 13)) ** 2 + 10000 / (
+                time ** 0.01 + 1 / time ** 0.01) - 100.0 * distance
+        # / - 10.0 / (energy + 1)
         return
 
     def CalFitness(self, snakegame: SnakeGame):
@@ -160,15 +162,66 @@ class Individual:
         snakegame.Restart_game()
 
 
+# 选择父母
+def SelectChild(childs, f_mean, select_rate=0.1):
+    # sorted_child = sorted(childs, key=lambda x: x.fitness)
+    rate_all = [0]
+    f_all = 0
+    for i in childs:
+        f_all += i.fitness - f_mean
+    for i in range(len(childs)):
+        # rate = int(1 / len(sorted_child) * (0.0004 + (1.9996 - 0.0004) * i / (len(sorted_child) - 1)) * 100000)
+        rate = (childs[i].fitness - f_mean) / f_all * 100000
+        rate_all.append(rate_all[i] + rate)
+    select = []
+    for i in range(int(len(childs) * select_rate)):
+        idx = random.uniform(1, rate_all[-1])
+        ind = 0
+        while rate_all[ind] < idx:
+            ind += 1
+        select.append((childs[ind-1]))
+        # select.append(sorted_child[ind - 1])
+    return select
+
+
+def Crossover(parent1, parent2, f_max, f_avg, P_max=0.4, P_min=0.2):
+    # 自适应交叉概率
+    if max(parent1.fitness, parent2.fitness) < f_avg:
+        cross_rate = P_max
+    else:
+        cross_rate = P_max - (P_max - P_min) * (max(parent1.fitness, parent2.fitness) - f_avg) / (f_max - f_avg + 1)
+    gene1 = parent1.gene.contiguous()
+    gene2 = parent2.gene.contiguous()
+    temp1 = gene1.numpy()
+    temp2 = gene2.numpy()
+    for i in range(len(temp1)):
+        rate = random.uniform(0, 1)
+        if rate <= cross_rate:
+            temp1[i], temp2[i] = temp2[i], temp1[i]
+    return gene1, gene2
+
+
+def Variation(individual, total_N, cur_n):
+    # 自适应变异概率
+    mutation_rate = 0.05 * (1.0 - random.random() ** (1.0 - cur_n / total_N))
+    gene = individual.gene.numpy()
+    mutation_array = np.random.random(964) < mutation_rate
+    mutation = np.random.standard_cauchy(size=964)
+    mutation[mutation_array] *= 0.2
+    gene[mutation_array] += mutation[mutation_array]
+    return individual
+
+
 # 遗传算法主方法
-def genetic_algorithm(population_size, num_generation, gene_length=None, LastGeneration=None):
+def genetic_algorithm(population_size, num_generation, gene_length=None, LastGeneration=None, Fps=100, select_rate=0.1):
+    # best=[]
     No = 1
-    game = SnakeGame(row=10, column=10, Fps=0)
+    game = SnakeGame(row=20, column=20, Fps=Fps)
     # 初始化群体或读取上一代最优个体基因
     population = []
     if not LastGeneration:
         while len(population) < population_size:
-            snake = Individual(0, No, torch.randn(964))
+            snake = Individual(0, No, torch.tensor(np.random.uniform(-1, 1, 964), dtype=torch.float64))
             No += 1
             snake.CalFitness(game)
             population.append(snake)
@@ -182,6 +235,7 @@ def genetic_algorithm(population_size, num_generation, gene_length=None, LastGen
             f_mean += i.fitness
         f_mean /= population_size
         best_individual = max(population, key=lambda x: x.fitness)
+        # best.append(best_individual)
         with open(r'./All/' + str(best_individual.generation) + '-' + str(best_individual.No) + '.pkl', 'wb') as ch:
             pickle.dump(best_individual, ch)
         # logging
@@ -189,20 +243,20 @@ def genetic_algorithm(population_size, num_generation, gene_length=None, LastGen
             log.write(
                 f'当前代数: {best_individual.generation}\t最优个体: {best_individual.No}\t适应性: {best_individual.fitness}\n')
         No = 1
-        parents = GA.SelectChild(population)
-        # next_generation = [Individual(best_individual.generation + 1, No, best_individual.gene.contiguous()),
-        #                    Individual(best_individual.generation + 1, No, best_individual.gene.contiguous())]
-        next_generation = []
+        parents = SelectChild(population, select_rate)
+        next_generation = [Individual(best_individual.generation + 1, No, best_individual.gene.contiguous()),
+                           Individual(best_individual.generation + 1, No, best_individual.gene.contiguous())]
+        # next_generation = []
         # 保留上一代部分优秀样本，确保优秀样本能参与交叉变异，模型才能收敛
         while len(next_generation) < population_size:
             parent1, parent2 = random.sample(parents, 2)
-            gene1, gene2 = GA.UniformCrossover(parent1, parent2, best_individual.fitness, f_mean)
+            gene1, gene2 = Crossover(parent1, parent2, best_individual.fitness, f_mean)
             child1 = Individual(parent1.generation + 1, No, gene1)
             No += 1
             child2 = Individual(parent2.generation + 1, No, gene2)
             No += 1
-            child1 = GA.Variation(child1, num_generation, parents[0].generation)
-            child2 = GA.Variation(child2, num_generation, parents[0].generation)
+            child1 = Variation(child1, num_generation, parents[0].generation)
+            child2 = Variation(child2, num_generation, parents[0].generation)
             child1.CalFitness(game)
             child2.CalFitness(game)
             # # 保存样本
@@ -213,6 +267,8 @@ def genetic_algorithm(population_size, num_generation, gene_length=None, LastGen
             next_generation.extend([child1, child2])
         population = next_generation
     best_individual = max(population, key=lambda x: x.fitness)
+    # best.append(best_individual)
+    # best.sort(key=lambda x:x.fitness,reverse=True)
     return best_individual
 
 
@@ -221,9 +277,9 @@ if __name__ == '__main__':
     last_generation = None
     path = os.listdir(r'./Best')
     if path:
-        with open(r'./Best/' + path[-1], 'rb') as f:
+        with open(r'./Best/' + path[0], 'rb') as f:
             last_generation = pickle.load(f)
-    best = genetic_algorithm(100, 50, None, last_generation)
+    best = genetic_algorithm(100, 500, None, last_generation, Fps=10, select_rate=0.2)
     with open(r'./best/' + str(best.generation) + '-' + str(best.No) + '.pkl', 'w+b') as f:
         pickle.dump(best, f)
     print(f"最好个体:{best.generation}-{best.No} \t 适应度{best.fitness}")
