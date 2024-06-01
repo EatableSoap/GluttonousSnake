@@ -1,5 +1,3 @@
-import random
-
 from GA_train import Individual, SnakeNet
 import os.path
 import tkinter
@@ -10,6 +8,7 @@ import pickle
 
 
 class SnakeGame(Snake):
+
     def __init__(self, row=5, column=5, Fps=100):
         super(SnakeGame, self).__init__(row, column, Fps)
         # 方向字典，无需写函数
@@ -64,13 +63,12 @@ class SnakeGame(Snake):
             self.Restart_game()
             return False
         in_features = self.returnFeature()
-        idx = self.net.forward(in_features).contiguous()  # 获取最大概率索引
+        idx = self.net.predic(in_features)
         cur_dir = [self.snake_list[1][0] - self.snake_list[0][0],
                    self.snake_list[1][1] - self.snake_list[0][1]]  # 当前方向的反方向
         cur_dir_reverse = 1.0 - torch.tensor(self.dir_dict[str(cur_dir)], dtype=torch.float32)
         del_idx = torch.argmin(cur_dir_reverse).tolist()
-        idx = torch.log_softmax(idx, 0).detach().numpy()
-        sort_idx = np.argsort(-idx).tolist()
+        sort_idx = np.argsort(-idx.detach()).tolist()
         max_i = 0
         for i in sort_idx:
             if i != del_idx:
@@ -92,12 +90,11 @@ class SnakeGame(Snake):
         self.pause_flag = -1
         self.Dirc = [0, 0]
         self.Score = 0
-        self.Energy = int(self.Column * self.Row * 0.4)
+        self.Energy = int(self.Column * self.Row)
         self.Time = 0
         self.snake_list = self.ramdom_snake()
         self.Food_pos = []
         self.Have_food = False
-        self.uniq = [[[], []]] * self.Row * self.Column
         self.over = False
         # 这里取消注释外加import NOGraph下另外一个SnakeClass可以看见具体在训练什么
         self.canvas.delete(tkinter.ALL)  # 重写了这个和删除了一些不必要东西
@@ -105,6 +102,7 @@ class SnakeGame(Snake):
         self.draw_the_snake(self.canvas, self.snake_list)
         self.setlable()
         self.game_loop()
+        self.win.mainloop()
 
 
 if __name__ == '__main__':

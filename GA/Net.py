@@ -42,4 +42,4 @@ class SnakeNet(torch.nn.Module):
 
     def predic(self, in_features):
         y = self(in_features)
-        return torch.argmin(y, dim=-1).tolist()
+        return y

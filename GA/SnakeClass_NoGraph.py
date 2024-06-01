@@ -4,6 +4,8 @@ import random
 class Snake:
     # 生成食物,判断是否有食物和获胜条件
     def food(self, snke_list):
+        if self.seeds is not None and self.enableseed:  # 没有种子或分数小于10时，可认为在探索阶段
+            random.seed(self.seeds)
         if self.Have_food:
             return
         valid_position = [i for i in self.game_map if i not in snke_list]
@@ -37,7 +39,7 @@ class Snake:
                 snke_list.pop(-1)
             else:
                 self.Score += 1
-                self.Energy = min(int(self.Column * self.Row * 0.25), self.Energy + int(self.Column * self.Row * 0.125))
+                self.Energy = min(int(self.Column * self.Row), self.Energy + int(self.Column * self.Row * 0.6))
             self.Steps += 1
         return snke_list
 
@@ -53,7 +55,7 @@ class Snake:
         else:
             return False
 
-    def Restart_game(self, event=None, ):
+    def Restart_game(self, event=None):
         self.over = False
         self.winFlag = 0
         self.Dirc = [0, 0]
@@ -65,6 +67,8 @@ class Snake:
         self.Have_food = False
 
     def ramdom_snake(self):
+        if self.seeds is not None and self.enableseed:
+            random.seed(self.seeds)
         # 随机生成蛇的位置
         rx = random.randint(1, self.Row - 2)
         delta = random.choice([1, -1])
@@ -76,7 +80,9 @@ class Snake:
         else:
             return [head, [rx, ry + delta]]
 
-    def __init__(self, row=40, column=40):
+    def __init__(self, row=20, column=20, useSeeds=True, seeds=None):
+        self.enableseed = useSeeds
+        self.seeds = seeds
         self.over = False
         self.winFlag = 0
         self.Row = row
@@ -85,7 +91,7 @@ class Snake:
         self.Score = 0
         self.game_map = [[x, y] for x in range(column) for y in range(row)]
         self.snake_list = self.ramdom_snake()
-        self.Energy = int(self.Column * self.Row * 0.25)
+        self.Energy = int(self.Column * self.Row)
         self.Steps = 0
         self.Food_pos = []
         self.Have_food = False

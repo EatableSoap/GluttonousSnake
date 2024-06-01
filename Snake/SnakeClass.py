@@ -1,4 +1,3 @@
-import operator
 import random
 import tkinter as tk
 import random as rd
@@ -102,18 +101,12 @@ class Snake:
                 self.str_energy.set('Energy:' + str(self.Energy))
                 self.draw_a_unit(self.canvas, snke_list[-1][0], snke_list[-1][1], unit_color="white")
                 snke_list.pop(-1)
-                for i in self.uniq:
-                    if operator.eq(self.snake_list[0], i[0]) and operator.eq(self.Food_pos, i[1]):
-                        self.over = True
-                        self.win.quit()
-                self.uniq.append([self.snake_list[0], self.Food_pos])
-                del self.uniq[0]
                 self.draw_a_unit(self.canvas, snke_list[1][0], snke_list[1][1])
                 self.draw_a_unit(self.canvas, temp_head[0], temp_head[1], unit_color="purple")
                 self.draw_a_unit(self.canvas, snke_list[-1][0], snke_list[-1][1], unit_color='orange')
             else:
                 self.Score += 1
-                self.Energy = min(int(self.Column * self.Row * 0.25), self.Energy + int(self.Column * self.Row * 0.125))
+                self.Energy = min(int(self.Column * self.Row), self.Energy + int(self.Column * self.Row * 0.6))
                 self.str_score.set('Score:' + str(self.Score))
                 self.str_energy.set('Energy:' + str(self.Energy))
                 self.draw_a_unit(self.canvas, snke_list[-1][0], snke_list[-1][1], unit_color="orange")
@@ -134,11 +127,12 @@ class Snake:
         y = snke_list[0][1]
         set_list = snke_list[1:]
         # 判断头和身体是否重叠或判断超出边界
-        if self.over or snke_list[0] in set_list or x < 0 or x > self.Column - 1 or y < 0 or y > self.Row - 1:  # or self.Energy <= 0:
+        if (self.over or snke_list[0] in set_list or x < 0 or x > self.Column - 1
+                or y < 0 or y > self.Row - 1 or self.Energy <= 0):
             self.pause_flag = 1
-            return 1
+            return True
         else:
-            return 0
+            return False
 
     def continue_game(self, windows):
         self.pause_flag = -1
@@ -196,19 +190,18 @@ class Snake:
         canvas.bind("<KeyPress-Up>", self.addFps)
         canvas.bind("<KeyPress-Down>", self.subFps)
 
-    def Restart_game(self, event=None, ):
-        if not self.over_label is int:
+    def Restart_game(self, event=None):
+        if self.over_label is not int:
             self.over_label.destroy()
             self.win.update()
         self.winFlag = 0
         self.pause_flag = -1
         self.Dirc = [0, 0]
         self.Score = 0
-        self.Energy = int(self.Column * self.Row * 0.25)
+        self.Energy = int(self.Column * self.Row)
         self.Time = 0
         self.snake_list = self.ramdom_snake()
         self.Food_pos = []
-        self.uniq = [[[],[]]] * self.Column * self.Row
         self.Have_food = False
         self.over = False
         self.put_a_background(self.canvas)
@@ -216,6 +209,8 @@ class Snake:
         self.setlable()
 
     def ramdom_snake(self):
+        if not self.seeds:
+            random.seed(self.seeds)
         # 随机生成蛇的位置
         rx = rd.randint(1, self.Row - 2)
         delta = rd.choice([1, -1])
@@ -240,7 +235,8 @@ class Snake:
         self.win.geometry("%dx%d+%d+%d" % (self.Width, self.Height + 4 * self.Unit_size, left, top))
         return left, top
 
-    def __init__(self, row=40, column=40, Fps=100, Unit_size=20):
+    def __init__(self, row=40, column=40, Fps=100, Unit_size=20,seeds=None):
+        self.seeds = seeds
         self.over = False
         self.winFlag = 0
         self.Fps = Fps
@@ -259,9 +255,8 @@ class Snake:
         self.Dirc = [0, 0]
         self.Score = 0
         self.game_map = []
-        self.uniq = [[[],[]]] * self.Column * self.Row
         self.snake_list = self.ramdom_snake()
-        self.Energy = int(self.Column * self.Row * 0.25)
+        self.Energy = int(self.Column * self.Row)
         self.Time = 0
         self.Food_pos = []
         self.Have_food = False
