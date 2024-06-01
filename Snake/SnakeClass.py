@@ -1,3 +1,4 @@
+import operator
 import random
 import tkinter as tk
 import random as rd
@@ -101,6 +102,12 @@ class Snake:
                 self.str_energy.set('Energy:' + str(self.Energy))
                 self.draw_a_unit(self.canvas, snke_list[-1][0], snke_list[-1][1], unit_color="white")
                 snke_list.pop(-1)
+                for i in self.uniq:
+                    if operator.eq(self.snake_list[0], i[0]) and operator.eq(self.Food_pos, i[1]):
+                        self.over = True
+                        self.win.quit()
+                self.uniq.append([self.snake_list[0], self.Food_pos])
+                del self.uniq[0]
                 self.draw_a_unit(self.canvas, snke_list[1][0], snke_list[1][1])
                 self.draw_a_unit(self.canvas, temp_head[0], temp_head[1], unit_color="purple")
                 self.draw_a_unit(self.canvas, snke_list[-1][0], snke_list[-1][1], unit_color='orange')
@@ -127,7 +134,7 @@ class Snake:
         y = snke_list[0][1]
         set_list = snke_list[1:]
         # 判断头和身体是否重叠或判断超出边界
-        if snke_list[0] in set_list or x < 0 or x > self.Column - 1 or y < 0 or y > self.Row - 1 or self.Energy <= 0:
+        if self.over or snke_list[0] in set_list or x < 0 or x > self.Column - 1 or y < 0 or y > self.Row - 1:  # or self.Energy <= 0:
             self.pause_flag = 1
             return 1
         else:
@@ -169,11 +176,11 @@ class Snake:
         #     pause_button.pack_configure(expand=1)
         #     second.geometry("%dx%d+%d+%d" % (20, 30, 400, 400))
 
-    def addFps(self,event=None):
+    def addFps(self, event=None):
         self.Fps += 10
         return
 
-    def subFps(self,event=None):
+    def subFps(self, event=None):
         self.Fps = max(0, self.Fps - 10)
         return
 
@@ -201,7 +208,9 @@ class Snake:
         self.Time = 0
         self.snake_list = self.ramdom_snake()
         self.Food_pos = []
+        self.uniq = [[[],[]]] * self.Column * self.Row
         self.Have_food = False
+        self.over = False
         self.put_a_background(self.canvas)
         self.draw_the_snake(self.canvas, self.snake_list)
         self.setlable()
@@ -232,6 +241,7 @@ class Snake:
         return left, top
 
     def __init__(self, row=40, column=40, Fps=100, Unit_size=20):
+        self.over = False
         self.winFlag = 0
         self.Fps = Fps
         self.pause_flag = -1
@@ -249,6 +259,7 @@ class Snake:
         self.Dirc = [0, 0]
         self.Score = 0
         self.game_map = []
+        self.uniq = [[[],[]]] * self.Column * self.Row
         self.snake_list = self.ramdom_snake()
         self.Energy = int(self.Column * self.Row * 0.25)
         self.Time = 0

@@ -1,4 +1,6 @@
-from GA_Net_train import Individual,SnakeNet
+import random
+
+from GA_train import Individual, SnakeNet
 import os.path
 import tkinter
 import torch
@@ -8,8 +10,8 @@ import pickle
 
 
 class SnakeGame(Snake):
-    def __init__(self, row=5, column=5,Fps=100):
-        super(SnakeGame, self).__init__(row, column,Fps)
+    def __init__(self, row=5, column=5, Fps=100):
+        super(SnakeGame, self).__init__(row, column, Fps)
         # 方向字典，无需写函数
         self.dir_dict = {
             '[0.0, -1.0]': [1.0, 0.0, 0.0, 0.0],
@@ -82,7 +84,7 @@ class SnakeGame(Snake):
             self.Restart_game()
             return False
         else:
-            self.win.after(self.Fps,self.game_loop)
+            self.win.after(self.Fps, self.game_loop)
             return True
 
     def Restart_game(self, event=None):
@@ -95,24 +97,25 @@ class SnakeGame(Snake):
         self.snake_list = self.ramdom_snake()
         self.Food_pos = []
         self.Have_food = False
+        self.uniq = [[[], []]] * self.Row * self.Column
+        self.over = False
         # 这里取消注释外加import NOGraph下另外一个SnakeClass可以看见具体在训练什么
         self.canvas.delete(tkinter.ALL)  # 重写了这个和删除了一些不必要东西
         self.put_a_background(self.canvas, color='white')
         self.draw_the_snake(self.canvas, self.snake_list)
         self.setlable()
         self.game_loop()
-        self.win.mainloop()
 
 
 if __name__ == '__main__':
     # 读取最优样本
     last_generation = None
-    path = os.listdir(r'./Best')
-    path = sorted(path, key=lambda x: int(x.split('-')[0]), reverse=True)
+    path = os.listdir(r'D:/Data/Best')
+    path = sorted(path, key=lambda x: int(x.split('.')[0]), reverse=True)
     if path:
-        with open(r'./Best/' + path[0], 'rb') as f:
+        with open(r'D:/Data/Best/' + path[0], 'rb') as f:
             last_generation = pickle.load(f)
-    game = SnakeGame(10,10,50)
-    game.net.load_state_dict(Individual.gene2State(last_generation))
+    game = SnakeGame(10, 10, 50)
+    game.net.setweight(last_generation.gene)
     game.game_loop()
     game.win.mainloop()

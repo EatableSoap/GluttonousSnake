@@ -20,12 +20,12 @@ class Snake:
         head_0 = snke_list[0]
         if head_0 == pos:
             self.Have_food = False
-            return 1
+            return True
         else:
-            return 0
+            return False
 
     # 移动蛇
-    def move_snake(self, snke_list, direc, rush):
+    def move_snake(self, snke_list, direc):
         if direc != [0, 0]:
             head_0 = snke_list[0]
             temp_head = head_0.copy()
@@ -38,11 +38,7 @@ class Snake:
             else:
                 self.Score += 1
                 self.Energy = min(int(self.Column * self.Row * 0.25), self.Energy + int(self.Column * self.Row * 0.125))
-            if rush:
-                self.Time += 1
-            else:
-                self.Time += 2
-            del temp_head
+            self.Steps += 1
         return snke_list
 
     # 游戏结束
@@ -51,25 +47,19 @@ class Snake:
         y = snke_list[0][1]
         set_list = snke_list[1:]
         # 判断头和身体是否重叠或判断超出边界
-        if snke_list[0] in set_list or x < 0 or x > self.Column - 1 or y < 0 or y > self.Row - 1 or self.Energy <= 0:
-            self.pause_flag = 1
-            return 1
+        if (self.over or snke_list[0] in set_list or x < 0
+                or x > self.Column - 1 or y < 0 or y > self.Row - 1 or self.Energy <= 0):
+            return True
         else:
-            return 0
-
-    def Exit_game(self, event=None):
-        exit()
-
-    def Pause_game(self, event=None):
-        self.pause_flag = -self.pause_flag
+            return False
 
     def Restart_game(self, event=None, ):
+        self.over = False
         self.winFlag = 0
-        self.pause_flag = -1
         self.Dirc = [0, 0]
         self.Score = 0
-        self.Energy = int(self.Column * self.Row * 0.25)
-        self.Time = 0
+        self.Energy = int(self.Column * self.Row * 0.5)
+        self.Steps = 0
         self.snake_list = self.ramdom_snake()
         self.Food_pos = []
         self.Have_food = False
@@ -86,21 +76,17 @@ class Snake:
         else:
             return [head, [rx, ry + delta]]
 
-    def __init__(self, row=40, column=40, Fps=100, Unit_size=20):
+    def __init__(self, row=40, column=40):
+        self.over = False
         self.winFlag = 0
-        self.Fps = Fps
-        self.pause_flag = -1
-        self.Unit_size = Unit_size  # 一个像素大小
         self.Row = row
         self.Column = column
-        self.Height = row * self.Unit_size
-        self.Width = column * self.Unit_size
         self.Dirc = [0, 0]
         self.Score = 0
-        self.game_map = [[x,y] for x in range(column) for y in range(row)]
+        self.game_map = [[x, y] for x in range(column) for y in range(row)]
         self.snake_list = self.ramdom_snake()
         self.Energy = int(self.Column * self.Row * 0.25)
-        self.Time = 0
+        self.Steps = 0
         self.Food_pos = []
         self.Have_food = False
 
@@ -108,10 +94,7 @@ class Snake:
         self.food(self.snake_list)
         if self.winFlag:
             return False
-        self.snake_list = self.move_snake(self.snake_list, self.Dirc, False)
+        self.snake_list = self.move_snake(self.snake_list, self.Dirc)
         if self.game_over(self.snake_list):
             return False
-
-
-if __name__ == '__main__':
-    game = Snake(Unit_size=20)
+        return True
