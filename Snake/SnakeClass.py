@@ -235,7 +235,7 @@ class Snake:
         self.win.geometry("%dx%d+%d+%d" % (self.Width, self.Height + 4 * self.Unit_size, left, top))
         return left, top
 
-    def __init__(self, row=40, column=40, Fps=100, Unit_size=20,seeds=None):
+    def __init__(self, row=40, column=40, Fps=100, Unit_size=20, seeds=None):
         self.seeds = seeds
         self.over = False
         self.winFlag = 0

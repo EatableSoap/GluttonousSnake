@@ -109,11 +109,14 @@ if __name__ == '__main__':
     # 读取最优样本
     last_generation = None
     path = os.listdir(r'D:/Data/Best')
-    path = sorted(path, key=lambda x: int(x.split('.')[0]), reverse=True)
+    path = sorted(path, key=lambda x: int(x.split('_')[0]), reverse=True)
+    for i in path:
+        if i.endswith('_population.pkl'):
+            del i
     if path:
         with open(r'D:/Data/Best/' + path[0], 'rb') as f:
             last_generation = pickle.load(f)
-    game = SnakeGame(10, 10, 50)
+    game = SnakeGame(30, 30, 50)
     game.net.setweight(last_generation.gene)
     game.game_loop()
     game.win.mainloop()
