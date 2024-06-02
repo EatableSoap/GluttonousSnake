@@ -27,21 +27,23 @@ class Snake:
             return False
 
     # 移动蛇
-    def move_snake(self, snke_list, direc):
+    def move_snake(self, snke_list, direc, rush):
+        isEat = False
         if direc != [0, 0]:
             head_0 = snke_list[0]
             temp_head = head_0.copy()
             temp_head[0] = temp_head[0] + direc[0]
             temp_head[1] = temp_head[1] + direc[1]
             snke_list.insert(0, temp_head)
+            self.Steps += 1
             if not self.snake_eat(snke_list, self.Food_pos):
                 self.Energy -= 1
                 snke_list.pop(-1)
             else:
+                isEat = True
                 self.Score += 1
                 self.Energy = min(int(self.Column * self.Row), self.Energy + int(self.Column * self.Row * 0.6))
-            self.Steps += 1
-        return snke_list
+        return isEat, snke_list
 
     # 游戏结束
     def game_over(self, snke_list):
@@ -100,7 +102,7 @@ class Snake:
         self.food(self.snake_list)
         if self.winFlag:
             return False
-        self.snake_list = self.move_snake(self.snake_list, self.Dirc)
+        _,self.snake_list = self.move_snake(self.snake_list, self.Dirc,False)
         if self.game_over(self.snake_list):
             return False
         return True

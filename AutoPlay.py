@@ -200,7 +200,7 @@ class FindWay(Snake):
             second.geometry("%dx%d+%d+%d" % (20, 30, 400, 400))
 
     def Restart_game(self, event=None):
-        if not self.over_label is int:
+        if self.over_label is not int:
             self.over_label.destroy()
             self.win.update()
         self.winFlag = 0
@@ -221,6 +221,6 @@ class FindWay(Snake):
 
 
 if __name__ == '__main__':
-    game = FindWay(Fps=0, column=20, row=20, Unit_size=20, visualize=False, g_value=1.01)
+    game = FindWay(Fps=0, column=40, row=40, Unit_size=20, visualize=False, g_value=1.01)
     game.game_loop()
     game.win.mainloop()

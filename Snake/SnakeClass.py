@@ -98,25 +98,19 @@ class Snake:
             snke_list.insert(0, temp_head)
             if not self.snake_eat(snke_list, self.Food_pos):
                 self.Energy -= 1
-                self.str_energy.set('Energy:' + str(self.Energy))
                 self.draw_a_unit(self.canvas, snke_list[-1][0], snke_list[-1][1], unit_color="white")
                 snke_list.pop(-1)
-                self.draw_a_unit(self.canvas, snke_list[1][0], snke_list[1][1])
-                self.draw_a_unit(self.canvas, temp_head[0], temp_head[1], unit_color="purple")
-                self.draw_a_unit(self.canvas, snke_list[-1][0], snke_list[-1][1], unit_color='orange')
             else:
                 self.Score += 1
                 self.Energy = min(int(self.Column * self.Row), self.Energy + int(self.Column * self.Row * 0.6))
-                self.str_score.set('Score:' + str(self.Score))
-                self.str_energy.set('Energy:' + str(self.Energy))
-                self.draw_a_unit(self.canvas, snke_list[-1][0], snke_list[-1][1], unit_color="orange")
-                self.draw_a_unit(self.canvas, snke_list[1][0], snke_list[1][1])
-                self.draw_a_unit(self.canvas, temp_head[0], temp_head[1], unit_color="purple")
+            self.draw_a_unit(self.canvas, snke_list[-1][0], snke_list[-1][1], unit_color="orange")
+            self.draw_a_unit(self.canvas, snke_list[1][0], snke_list[1][1])
+            self.draw_a_unit(self.canvas, temp_head[0], temp_head[1], unit_color="purple")
             if rush:
-                self.Time += 1
+                self.Steps += 1
             else:
-                self.Time += 2
-            self.str_time.set('Time:' + str(self.Time))
+                self.Steps += 2
+            self.setlable()
             self.win.update()
             del temp_head
         return snke_list
@@ -152,7 +146,8 @@ class Snake:
             self.over_label = tk.Label(self.win, text='You Win!', font=('楷体', 25), width=15, height=1)
             self.over_label.place(x=(self.Width - 260) / 2, y=(self.Height - 40) / 2, bg=None)
             self.win.update()
-        self.snake_list = self.move_snake(self.snake_list, self.Dirc, False)
+            return False
+        _,self.snake_list = self.move_snake(self.snake_list, self.Dirc, False)
         if self.game_over(self.snake_list):
             self.over_label = tk.Label(self.win, text='Game Over', font=('楷体', 25), width=15, height=1)
             self.over_label.place(x=(self.Width - 260) / 2, y=(self.Height - 40) / 2, bg=None)
@@ -191,7 +186,8 @@ class Snake:
         canvas.bind("<KeyPress-Down>", self.subFps)
 
     def Restart_game(self, event=None):
-        if self.over_label is not int:
+        self.canvas.delete(tk.ALL)
+        if type(self.over_label) is not int:
             self.over_label.destroy()
             self.win.update()
         self.winFlag = 0
@@ -199,7 +195,7 @@ class Snake:
         self.Dirc = [0, 0]
         self.Score = 0
         self.Energy = int(self.Column * self.Row)
-        self.Time = 0
+        self.Steps = 0
         self.snake_list = self.ramdom_snake()
         self.Food_pos = []
         self.Have_food = False
@@ -225,7 +221,7 @@ class Snake:
     def setlable(self):
         self.str_score.set('Score:' + str(self.Score))
         self.str_energy.set('Energy:' + str(self.Energy))
-        self.str_time.set("Time:" + str(self.Time))
+        self.str_time.set("Time:" + str(self.Steps))
 
     def set_in_windows(self):
         screenWidth = self.win.winfo_screenwidth()  # 获取显示区域的宽度
@@ -235,7 +231,7 @@ class Snake:
         self.win.geometry("%dx%d+%d+%d" % (self.Width, self.Height + 4 * self.Unit_size, left, top))
         return left, top
 
-    def __init__(self, row=40, column=40, Fps=100, Unit_size=20,seeds=None):
+    def __init__(self, row=40, column=40, Fps=100, Unit_size=20, seeds=None):
         self.seeds = seeds
         self.over = False
         self.winFlag = 0
@@ -257,7 +253,7 @@ class Snake:
         self.game_map = []
         self.snake_list = self.ramdom_snake()
         self.Energy = int(self.Column * self.Row)
-        self.Time = 0
+        self.Steps = 0
         self.Food_pos = []
         self.Have_food = False
         self.put_a_background(self.canvas)
