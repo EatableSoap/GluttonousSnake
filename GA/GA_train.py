@@ -78,7 +78,7 @@ class SnakeGame(Snake):
                 break
         temp_dir = [0.0, 0.0, 0.0, 0.0]
         temp_dir[max_i] = 1.0
-        _,self.snake_list = self.move_snake(self.snake_list, self.dir_dict[str(temp_dir)])
+        _, self.snake_list = self.move_snake(self.snake_list, self.dir_dict[str(temp_dir)], False)
         if self.game_over(self.snake_list):
             # self.win.quit()
             self.over = True
@@ -122,11 +122,11 @@ class Individual:
         # dist = abs(snakegame.snake_list[0][0] - snakegame.Food_pos[0]) + abs(
         #     snakegame.snake_list[0][1] - snakegame.Food_pos[1])
         # TODO 后续优化目标，加入动态适应度调整
-        self.fitness = ((1000 * self.game.Score ** 2 + 5000 / (self.game.Steps + 1)
-                         - max(0.0, (self.game.Score - 10) / (self.game.Score + 1) ** 0.85)
-                         * self.game.Steps))*self.generation/20
-        # self.fitness = (1000 * self.game.Score ** 2 + 5000 / (self.game.Steps + 1)
-        #                 - max(0.0, (self.game.Score - 10) / (self.game.Score + 1) ** 0.9) * self.game.Steps)
+        # self.fitness = ((1000 * self.game.Score ** 2 + 5000 / (self.game.Steps + 1)
+        #                  - max(0.0, (self.game.Score - 10) / (self.game.Score + 1) ** 0.85)
+        #                  * self.game.Steps)) * self.generation / 20
+        self.fitness = (1000 * self.game.Score ** 2 + 5000 / (self.game.Steps + 1)
+                        - max(0.0, (self.game.Score - 10) / (self.game.Score + 1) ** 0.9) * self.game.Steps)
         # 发现，当分数达到10分左右
         # .时，平均分迎来突变，因此猜测一个分段fitness要更适合GA算法,收敛于均分13左右
         # 加入对步数的惩罚
@@ -135,7 +135,6 @@ class Individual:
         # self.fitness = (self.game.Score * 100 + 1 / self.game.Steps)
         # 对步数的乘法惩罚不足
         self.score = self.game.Score
-        # del self.game
         self.game.Restart_game()
 
 
@@ -184,7 +183,6 @@ class GA:
         else:
             cross_rate = (self.crosser_max - (self.crosser_max - self.crosser_min) *
                           (max(parent1.fitness, parent2.fitness) - f_avg) / (f_max - f_avg + 1))
-        # cross_rate = self.crosser_rate
         gene1 = parent1.gene.copy()
         gene2 = parent2.gene.copy()
         for i in range(len(gene1)):
@@ -198,7 +196,7 @@ class GA:
         # return gene1, gene2
 
     def Variation(self, individual, total_N, cur_n):
-        # 自适应变异概率，后期变大
+        # 自适应变异概率
         mutation_rate = self.mutate_rate + 0.1 * (1.0 - random.random() ** (1.0 - cur_n / total_N))
         mutation_array = np.random.random(964) < mutation_rate
         mutation = np.random.standard_cauchy(size=self.gene_size) * max(1.0, 2 * cur_n / total_N)
@@ -234,16 +232,16 @@ class GA:
             f_mean /= len(self.population)
             if f_mean >= 5.0:
                 self.use_seeds = False
-            with open(r'D:/Data/All/evolution.txt', 'a+') as log:
+            with open(r'./Model/All/evolution.txt', 'a+') as log:
                 log.write(f'当前代数：{self.generation - 1}\t 最佳得分：{self.best.score}\t'
                           f'平均分数：{score_mean}\n')
             print(f'当前代数：{self.generation - 1}\t 最佳得分：{self.best.score}\t'
                   f'平均分数：{score_mean}')
             if n != 0 and n % 20 == 0:
-                with open(r'D:/Data/All/' + str(self.best.generation)
+                with open(r'./Model/All/' + str(self.best.generation)
                           + '_' + str(self.seeds) + '.pkl', 'w+b') as temp_best:
                     pickle.dump(self.best, temp_best)
-                with open(r'D:/Data/All/' + str(self.best.generation)
+                with open(r'./Model/All/' + str(self.best.generation)
                           + '_' + str(self.seeds) + '_population' + '.pkl', 'w+b') as temp_population:
                     pickle.dump(self.population, temp_population)
 
@@ -262,16 +260,15 @@ class GA:
 
 
 if __name__ == '__main__':
-    random.seed(100)
     populations = 400
-    generations = 2000
+    generations = 300
     ele_individual = 100
-    mutation_scale = 0.1
+    mutation_scale = 0.11
     crossMax = 0.8
     crossMin = 0.4
     # 读取最优样本(其实是最新样本)
     last_population = None
-    path = os.listdir(r'D:/Data/Best')
+    path = os.listdir(r'./Model/Best')
     path = sorted(path, key=lambda x: int(x.split('_')[0]), reverse=True)
 
     GA = GA(populations, ele_individual, generations, mutation_scale, crossMax, crossMin)
@@ -280,17 +277,16 @@ if __name__ == '__main__':
             if i.endswith('_population.pkl'):
                 last_population = i
                 break
-        with open(r'D:/Data/Best/' + last_population, 'rb') as f:
+        with open(r'./Model/Best/' + last_population, 'rb') as f:
             last_population = pickle.load(f)
-        # last_seeds = path[0].split('_')[1].split('.')[0]
-        # GA.seeds = last_seeds
+        GA.use_seeds = False
         GA.generation = last_population[0].generation
     GA.evo(last_population)
     BestIndividual = GA.best
-    with open(r'D:/Data/Best/' + str(BestIndividual.generation) + '_'
+    with open(r'./Model/Best/' + str(BestIndividual.generation) + '_'
               + str(GA.seeds) + '.pkl', 'w+b') as f:
         pickle.dump(BestIndividual, f)
-    with open(r'D:/Data/Best/' + str(BestIndividual.generation) + '_'
+    with open(r'./Model/Best/' + str(BestIndividual.generation) + '_'
               + str(GA.seeds) + '_population' + '.pkl', 'w+b') as f:
         pickle.dump(GA.population, f)
     print(f"最好个体:{BestIndividual.generation}\t 得分{BestIndividual.score}")
@@ -299,5 +295,5 @@ if __name__ == '__main__':
 目前来说，程序基本没问题，但仍存在可优化地方：
 适应度函数增加分段优化，给予更大区分度
 加入自适应变异概率，增加种群多样性
-还需要跑更多代数
+还需要跑更多代数?
 '''

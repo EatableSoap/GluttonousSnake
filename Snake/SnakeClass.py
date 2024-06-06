@@ -147,7 +147,7 @@ class Snake:
             self.over_label.place(x=(self.Width - 260) / 2, y=(self.Height - 40) / 2, bg=None)
             self.win.update()
             return False
-        _,self.snake_list = self.move_snake(self.snake_list, self.Dirc, False)
+        self.snake_list = self.move_snake(self.snake_list, self.Dirc, False)
         if self.game_over(self.snake_list):
             self.over_label = tk.Label(self.win, text='Game Over', font=('楷体', 25), width=15, height=1)
             self.over_label.place(x=(self.Width - 260) / 2, y=(self.Height - 40) / 2, bg=None)

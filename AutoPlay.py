@@ -173,7 +173,7 @@ class FindWay(Snake):
             self.over_label.place(x=(self.Width - 260) / 2, y=(self.Height - 40) / 2, bg=None)
             self.win.update()
             scores.append(self.Score)
-            step.append(self.Time)
+            step.append(self.Steps)
             self.Restart_game()
         if not self.path:
             self.move()
@@ -187,7 +187,7 @@ class FindWay(Snake):
             self.over_label.place(x=(self.Width - 260) / 2, y=(self.Height - 40) / 2, bg=None)
             self.win.update()
             scores.append(self.Score)
-            step.append(self.Time)
+            step.append(self.Steps)
             self.Restart_game()
         elif self.pause_flag == -1:
             self.win.after(self.Fps, self.game_loop)
@@ -200,6 +200,8 @@ class FindWay(Snake):
             second.geometry("%dx%d+%d+%d" % (20, 30, 400, 400))
 
     def Restart_game(self, event=None):
+        print(self.Score)
+        self.canvas.delete(tk.ALL)
         if self.over_label is not int:
             self.over_label.destroy()
             self.win.update()
@@ -208,7 +210,7 @@ class FindWay(Snake):
         self.Dirc = [0, 0]
         self.Score = 0
         self.Energy = 400
-        self.Time = 0
+        self.Steps = 0
         self.snake_list = self.ramdom_snake()
         self.Food_pos = []
         self.Have_food = False
@@ -221,6 +223,6 @@ class FindWay(Snake):
 
 
 if __name__ == '__main__':
-    game = FindWay(Fps=0, column=40, row=40, Unit_size=20, visualize=False, g_value=1.01)
+    game = FindWay(Fps=0, column=10, row=10, Unit_size=20, visualize=False, g_value=1)
     game.game_loop()
     game.win.mainloop()

@@ -4,7 +4,7 @@ import random
 class Snake:
     # 生成食物,判断是否有食物和获胜条件
     def food(self, snke_list):
-        if self.seeds is not None and self.enableseed:  # 没有种子或分数小于10时，可认为在探索阶段
+        if self.seeds is not None and self.enableseed:  # 没有种子或平均分数小于10时，可认为在探索阶段
             random.seed(self.seeds)
         if self.Have_food:
             return

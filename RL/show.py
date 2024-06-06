@@ -1,4 +1,5 @@
 # coding=utf-8
+import pickle
 import tkinter as tk
 
 from GluttonousSnake.Snake.SnakeClass import Snake
@@ -142,7 +143,9 @@ if __name__ == '__main__':
     agent = Agent()
     # game = SnakeGame(20,20)
     game = SnakeGameAI()
-    agent.model.load_model(r'model.pth')
+    with open(r'model/model_best.pkl', 'rb') as f:
+        agent = pickle.load(f)
+    # agent.model.load_model(r'model.pth')
     while True:
         state_old = agent.get_state(game)
         final_move = agent.get_action(state_old)

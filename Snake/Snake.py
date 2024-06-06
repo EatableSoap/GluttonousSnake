@@ -218,14 +218,14 @@ def Restart_game(event):
 
 Unit_size = 20  # 一个像素大小
 
-Row = 40
-Column = 40
+Row = 20
+Column = 20
 Height = Row * Unit_size
 Width = Column * Unit_size
 win = tk.Tk()
 win.title("Snake")
-canvas = tk.Canvas(win, width=Width, height=Height + 2 * Unit_size)
-canvas.pack()
+canvas = tk.Canvas(win, width=Width, height=Height)
+canvas.grid()
 Dirc = [0, 0]
 Score = 0
 game_map = []
@@ -251,9 +251,9 @@ time_label = tk.Label(win, textvariable=str_time, font=('楷体', 20), width=10,
 str_score.set('Score:' + str(Score))
 str_energy.set('Energy:' + str(Energy))
 str_time.set("Time:" + str(Time))
-score_label.place(x=(Width - 400) / 2, y=Height)
-energy_label.place(x=(Width - 100) / 2, y=Height)
-time_label.place(x=(Width + 200) / 2, y=Height)
+score_label.grid()
+energy_label.grid()
+time_label.grid()
 # 绑定按键
 key_bind(canvas)
 # 游戏主程序

@@ -7,9 +7,9 @@ from dataset import DateSet
 
 
 class FingerModel(DateSet):
-    def __init__(self, path=r'D:/AI_project/dataset'):
+    def __init__(self, path=r'./dataset'):
         super().__init__()
-        model = LinearSVR(C=3, dual=False, loss='squared_epsilon_insensitive', max_iter=10000000)
+        model = LinearSVR(C=3, dual=False, loss='squared_epsilon_insensitive', tol=1e-3, max_iter=10000000)
         # model=DecisionTreeRegressor(max_depth=1000000)
         self.clf1 = RegressorChain(model, order=[1, 0])
         self.clf2 = RegressorChain(model, order=[0, 1])
@@ -20,12 +20,6 @@ class FingerModel(DateSet):
         self.x_test = np.zeros(1)
         self.y_test = np.zeros(1)
         self.path = path
-
-    # 寻找凸包
-    # def FindFingerPos(self, img):
-    #     contours, hierarchy = cv.findContours(img, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-    #     hull = cv.convexHull(contours[0], returnPoints=False)
-    #     return hull
 
     def train(self, path):
         # self.clf = RandomForestRegressor()
@@ -54,7 +48,7 @@ class FingerModel(DateSet):
 
 if __name__ == '__main__':
     # path_name = r'D:/AI_project/dataset'
-    path_name = r'dataset'
+    path_name = r'./dataset'
     a = FingerModel()
     a.ReadData(path_name)
     # Processor = DateSet()

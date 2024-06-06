@@ -1,4 +1,5 @@
 import os.path
+import pickle
 
 import torch
 import numpy as np
@@ -6,6 +7,7 @@ from model import LinearQnet, QTrainer
 from collections import deque
 import random
 from game import SnakeGameAI
+import math
 
 LR = 0.001
 MEMORY_SIZE = 100_1000
@@ -16,15 +18,16 @@ class Agent:
     def __init__(self):
         self.model = LinearQnet(32, 256, 4)
         self.gama = 0.9
-        self.epsilon = 0
+        self.epsilon = 0.9
         self.n_games = 0
+        self.record = 0
         self.memory = deque(maxlen=MEMORY_SIZE)
         self.trainer = QTrainer(self.model, LR, self.gama)
 
     def get_action(self, state):
-        self.epsilon = 80 - self.n_games
+        # self.epsilon = 80 - self.n_games
         # final_move = [0, 0, 0]
-        if random.randint(0, 200) < self.epsilon:
+        if random.random() < self.epsilon:
             move = random.randint(0, 3)
             move = torch.tensor(move, dtype=torch.float32)
         else:
@@ -54,17 +57,20 @@ class Agent:
         self.trainer.train_step(states, actions, rewards, next_states, is_dones)
 
 
-def train():
-    plot_scores = []
-    plot_mean_scores = []
+def train(row, col, num):
+    score_list = []
     total_score = 0
-    record = 0
+    max_mean_scores = 0
     agent = Agent()
     # game = SnakeGame(20,20)
-    game = SnakeGameAI(20,20,Fps=100)
-    if os.path.exists(r'./model/model.pth'):
-        agent.model.load_model()
-    while True:
+    game = SnakeGameAI(row, col, Fps=100)
+    if os.path.exists(r'model/model_best.pkl'):
+        with open(r'model/model_best.pkl', 'rb') as f:
+            try:
+                agent = pickle.load(f)
+            except EOFError:
+                pass
+    while agent.n_games < num:
         state_old = agent.get_state(game)
         final_move = agent.get_action(state_old)
         cur_dir = [game.snake_list[1][0] - game.snake_list[0][0],
@@ -81,7 +87,8 @@ def train():
             max_i = (sort_idx[0] + 1) % 4
         temp_dir = [0.0, 0.0, 0.0, 0.0]
         temp_dir[max_i] = 1.0
-        reward, is_done, score = game.play_step(game.dir_dict[str(temp_dir)])
+        reward, is_done, score = game.play_step(game.dir_dict[str(temp_dir)], 10 + math.ceil(game.Score / 100),
+                                                1 + game.Score / 100)
         state_next = agent.get_state(game)
         agent.train_short_memory(state_old, temp_dir, reward, state_next, is_done)
         agent.remember(state_old, temp_dir, reward, state_next, is_done)
@@ -91,14 +98,27 @@ def train():
             agent.n_games += 1
             game.Restart_game()
             agent.train_long_memory()
-            if score > record:
-                record = score
-                agent.model.save_model()
-            print('Game', agent.n_games, 'Score', score, 'Record:', record)
+            if score > agent.record:
+                agent.record = score
+                with open(r'model/model_best.pkl', 'wb') as f:
+                    pickle.dump(agent, f)
             total_score += score
-            mean_scores = total_score / agent.n_games
-            plot_mean_scores.append(mean_scores)
+            if agent.n_games % 20 == 0:
+                agent.epsilon = max(0.05, agent.epsilon * 0.95)
+                mean_scores = total_score / 20
+                if mean_scores > max_mean_scores:
+                    max_mean_scores = mean_scores
+                    with open(r'model/model_best.pkl', 'wb') as f:
+                        pickle.dump(agent, f)
+                total_score = 0
+                # plot_mean_scores.append(mean_scores)
+                score_list.append([agent.n_games, agent.record, mean_scores])
+                print('Game', agent.n_games, '\t', 'Record:', agent.record, '\t'
+                      , 'Mean Score', mean_scores)
+    return score_list
 
 
 if __name__ == '__main__':
-    train()
+    game_score = train(10, 10, 2000)
+    with open(r'model/train_data.pkl', 'wb') as trainData:
+        pickle.dump(game_score, trainData)

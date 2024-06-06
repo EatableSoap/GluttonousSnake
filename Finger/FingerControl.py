@@ -5,9 +5,9 @@ from GluttonousSnake.Snake.SnakeClass import Snake
 from FingerModel import FingerModel
 
 # 获取视频地址
-path_name = r'D:/AI_project/dataset'
-ip = "10.198.247.249"
-port = "8080"
+path_name = r'./dataset'
+ip = ""  # 我是使用网络摄像头，手机上软件Ip摄像头，手机电脑需连接同一个网络
+port = "8080"  # 映射端口选择
 url = "http://" + ip + ":" + port + "/video"
 
 # 读取图像，创建游戏类
@@ -71,7 +71,7 @@ def printpic(local_game):
 
         # 每5帧移动一次
         if local_game.pause_flag == -1 and count % 5 == 0:
-            local_game.move_snake(local_game.snake_list, move_list[0], False)
+            local_game.snake_list = local_game.move_snake(local_game.snake_list, move_list[0], False)
         if len(move_list) > 1:
             move_list.pop(0)
         temp = cv.resize(frame[:1080, :1080], (local_game.Height, local_game.Width))

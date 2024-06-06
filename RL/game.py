@@ -63,11 +63,7 @@ class SnakeGame(Snake):
             snke_list.insert(0, temp_head)
             if not self.snake_eat(snke_list, self.Food_pos):
                 self.Energy -= 1
-                # self.draw_a_unit(self.canvas, snke_list[-1][0], snke_list[-1][1], unit_color="white")
                 snke_list.pop(-1)
-                # self.draw_a_unit(self.canvas, snke_list[1][0], snke_list[1][1])
-                # self.draw_a_unit(self.canvas, temp_head[0], temp_head[1], unit_color="purple")
-                # self.draw_a_unit(self.canvas, snke_list[-1][0], snke_list[-1][1], unit_color='orange')
             else:
                 isEat = True
                 self.Score += 1
@@ -76,37 +72,43 @@ class SnakeGame(Snake):
                 self.Steps += 1
             else:
                 self.Steps += 2
-            # self.draw_a_unit(self.canvas, snke_list[-1][0], snke_list[-1][1], unit_color="orange")
-            # self.draw_a_unit(self.canvas, snke_list[1][0], snke_list[1][1])
-            # self.draw_a_unit(self.canvas, temp_head[0], temp_head[1], unit_color="purple")
-            # self.setlable()
-            # self.win.update()
             del temp_head
         return isEat, snke_list
 
 
 class SnakeGameAI(SnakeGame):
-    def __init__(self, row=20, column=20, Fps=50):
-        super(SnakeGameAI, self).__init__(row, column, Fps=Fps, seeds=None)
+    def __init__(self, row=20, column=20, Fps=50, seeds=None):
+        super(SnakeGameAI, self).__init__(row, column, Fps=Fps, seeds=seeds)
 
-    def play_step(self, action):
+    def CalDistance(self):
+        return (abs(self.snake_list[0][0] - self.Food_pos[0])
+                + abs(self.snake_list[0][1] - self.Food_pos[1]))
+
+    def play_step(self, action, base_reward=10, reward_scale=1):
         # 1. move
         self.game_loop()
+        previous_dis = self.CalDistance()
         isEat, self.snake_list = self.move_snake(self.snake_list, action, False)
+        current_dist = self.CalDistance()
 
         # 2.check game is over
         is_done = False
         reward = 0
         if self.game_over(self.snake_list):
             is_done = True
-            reward -= 10
+            reward += -base_reward / reward_scale
             return reward, is_done, self.Score
 
         # 3. food is eaten
         if isEat:
             self.food(self.snake_list)
             self.Score += 1
-            reward = 10
+            reward += base_reward * reward_scale
+        else:
+            reward += -1 / reward_scale
+
+        reward += (previous_dis-current_dist)*5
+        # 加入对距离的奖励机制可以大大提高平均分数
 
         # 4. return info
         return reward, is_done, self.Score
