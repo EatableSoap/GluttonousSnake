@@ -36,6 +36,7 @@ class Snake:
             temp_head[1] = temp_head[1] + direc[1]
             snke_list.insert(0, temp_head)
             self.Steps += 1
+            # 如果吃到就不弹出蛇尾
             if not self.snake_eat(snke_list, self.Food_pos):
                 self.Energy -= 1
                 snke_list.pop(-1)

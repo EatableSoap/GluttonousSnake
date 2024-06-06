@@ -66,6 +66,7 @@ class FindWay(Snake):
             [x, y] = current.Position
             neighbors = [[x + 1, y], [x - 1, y], [x, y - 1], [x, y + 1]]
 
+            # 遍历邻居，将可能的最优解邻居加入开放列表
             for next_node in neighbors:
                 if (0 <= next_node[0] < self.Column and 0 <= next_node[1]
                         < self.Row and next_node not in body):
@@ -121,6 +122,7 @@ class FindWay(Snake):
                     0 <= temp[0] < self.Column and 0 <= temp[1] < self.Row and temp not in body:
                 near.append(temp)
         near.sort(key=lambda next_node: abs(next_node[0] - tail[0]) + abs(next_node[1] - tail[1]), reverse=True)
+        # 像从蛇头到蛇尾的最远路径走一步
         for i in near:
             sim_body = copy.deepcopy(body)
             sim_body.insert(0, i)

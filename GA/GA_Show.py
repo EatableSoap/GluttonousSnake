@@ -62,6 +62,8 @@ class SnakeGame(Snake):
         if self.winFlag:
             self.Restart_game()
             return False
+
+        # 获取预测索引，选择非反方向的最大概率索引
         in_features = self.returnFeature()
         idx = self.net.predic(in_features)
         cur_dir = [self.snake_list[1][0] - self.snake_list[0][0],
@@ -91,13 +93,12 @@ class SnakeGame(Snake):
         self.Dirc = [0, 0]
         self.Score = 0
         self.Energy = int(self.Column * self.Row)
-        self.Time = 0
+        self.Steps = 0
         self.snake_list = self.ramdom_snake()
         self.Food_pos = []
         self.Have_food = False
         self.over = False
-        # 这里取消注释外加import NOGraph下另外一个SnakeClass可以看见具体在训练什么
-        self.canvas.delete(tkinter.ALL)  # 重写了这个和删除了一些不必要东西
+        self.canvas.delete(tkinter.ALL)
         self.put_a_background(self.canvas, color='white')
         self.draw_the_snake(self.canvas, self.snake_list)
         self.setlable()

@@ -45,9 +45,11 @@ class Agent:
     def remember(self, state, action, reward, next_state, is_done):
         self.memory.append((state, action, reward, next_state, is_done))
 
+    # 短期记忆
     def train_short_memory(self, state, action, reward, next_state, is_done):
         self.trainer.train_step(state, action, reward, next_state, is_done)
 
+    # 长期记忆
     def train_long_memory(self):
         if len(self.memory) > BATCH_SIZE:
             mini_sample = random.sample(self.memory, BATCH_SIZE)
