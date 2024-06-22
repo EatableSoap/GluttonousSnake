@@ -1,3 +1,4 @@
+import copy
 import os.path
 import random
 
@@ -155,15 +156,15 @@ class GA:
         self.use_seeds = True
 
     def SelectChild(self):
-        sorted_child = sorted(self.population, key=lambda x: x.fitness, reverse=True)
+        sorted_child = sorted(self.population, key=lambda x: x.fitness)
         for i in sorted_child:
             i.generation += 1
-        self.population = sorted_child[:self.select_size]
+        return sorted_child[self.population_size - self.select_size:]
 
-    def RoundSelect(self):
+    def RoundSelect(self, population):
         rate_all = []
-        for i in range(len(self.population)):
-            rate = 2 - 1.1 + 2 * (1.1 - 1.0) * i / (len(self.population) - 1)
+        for i in range(len(population)):
+            rate = 2 - 1.1 + (1.1 - 0.9) * i / (len(population))
             rate_all.append(rate)
         select = []
         for i in range(2):
@@ -173,7 +174,7 @@ class GA:
             while cur < idx:
                 cur += rate_all[ind]
                 ind += 1
-            select.append(self.population[ind - 1])
+            select.append(population[ind - 1])
         return select
 
     def Crossover(self, parent1, parent2, f_avg, f_max):
@@ -197,7 +198,7 @@ class GA:
 
     def Variation(self, individual, total_N, cur_n):
         # 自适应变异概率
-        mutation_rate = self.mutate_rate + 0.1 * (1.0 - random.random() ** (1.0 - cur_n / total_N))
+        mutation_rate = (self.mutate_rate * (2.0 - cur_n / total_N)) ** (1.0 + cur_n / total_N)
         mutation_array = np.random.random(964) < mutation_rate
         mutation = np.random.standard_cauchy(size=self.gene_size) * max(1.0, 2 * cur_n / total_N)
         individual.gene[mutation_array] += mutation[mutation_array]
@@ -245,9 +246,11 @@ class GA:
                           + '_' + str(self.seeds) + '_population' + '.pkl', 'w+b') as temp_population:
                     pickle.dump(self.population, temp_population)
 
-            self.SelectChild()
+            next_generation = self.SelectChild()
+            self.population = []
+            # self.population = copy.deepcopy(next_generation)
             while len(self.population) < self.population_size:
-                parents = self.RoundSelect()
+                parents = self.RoundSelect(next_generation)
                 parent1, parent2 = parents[0:2]
                 gene1, gene2 = self.Crossover(parent1, parent2, f_mean, self.best.fitness)
                 child1 = Individual(gene1, self.generation, self.seeds)
@@ -255,17 +258,18 @@ class GA:
                 child1 = self.Variation(child1, self.evo_num, self.generation)
                 child2 = self.Variation(child2, self.evo_num, self.generation)
                 self.population.extend([child1, child2])
+            # self.population = next_generation
             random.shuffle(self.population)
         return self.best
 
 
 if __name__ == '__main__':
     populations = 400
-    generations = 300
+    generations = 2000
     ele_individual = 100
-    mutation_scale = 0.11
+    mutation_scale = 0.05
     crossMax = 0.8
-    crossMin = 0.4
+    crossMin = 0.6
     # 读取最优样本(其实是最新样本)
     last_population = None
     path = os.listdir(r'./Model/Best')

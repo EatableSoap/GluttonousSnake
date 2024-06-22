@@ -2,7 +2,7 @@
 运行此项目你需要安装requirement.txt里的相关库
 
 ```cmd
-# 转到根文件夹下，运行
+# conda环境下新建一个环境后，或者用旧环境，运行
 pip install -r requirements.txt
 ```
 

@@ -225,6 +225,6 @@ class FindWay(Snake):
 
 
 if __name__ == '__main__':
-    game = FindWay(Fps=0, column=10, row=10, Unit_size=20, visualize=False, g_value=1)
+    game = FindWay(Fps=0, column=20, row=20, Unit_size=20, visualize=False, g_value=1)
     game.game_loop()
     game.win.mainloop()

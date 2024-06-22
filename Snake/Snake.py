@@ -12,7 +12,7 @@ def draw_a_unit(can, col, row, unit_color="green"):
 
 
 # 绘制背景
-def put_a_background(can, color='Dimgray'):
+def put_a_background(can, color='White'):
     global game_map
     for x in range(Column):
         for y in range(Row):
@@ -102,7 +102,7 @@ def move_snake(snke_list, direc, rush):
         if not snake_eat(snke_list, Food_pos):
             Energy -= 1
             str_energy.set('Energy:' + str(Energy))
-            draw_a_unit(canvas, snke_list[-1][0], snke_list[-1][1], unit_color="Dimgray")
+            draw_a_unit(canvas, snke_list[-1][0], snke_list[-1][1], unit_color="white")
             snke_list.pop(-1)
             draw_a_unit(canvas, snke_list[1][0], snke_list[1][1])
             draw_a_unit(canvas, temp_head[0], temp_head[1], unit_color="black")
